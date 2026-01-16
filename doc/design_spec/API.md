@@ -16,7 +16,7 @@
 - **RESTful API**: リソース指向の設計
 - **バージョン管理なし**: URLにバージョン番号を含めない
 - **JSON形式**: リクエスト・レスポンスともにJSON
-- **HTTPメソッド**: GET（取得）、POST（作成）、PUT/PATCH（更新）、DELETE（削除）
+- **HTTPメソッド**: GET（取得）、POST（作成）、PUT（更新）、DELETE（削除）
 - **ステータスコード**: 標準的なHTTPステータスコードを使用
 
 ### 1.4 認証方式
@@ -369,6 +369,81 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
+### 3.5 トークンリフレッシュ
+
+#### エンドポイント
+```
+POST /auth/refresh
+```
+
+#### 説明
+アクセストークンの有効期限が切れた場合に、リフレッシュトークンを使用して新しいアクセストークンを取得する。
+
+#### リクエスト
+
+```typescript
+interface RefreshTokenRequest {
+  refreshToken: string;  // リフレッシュトークン
+}
+```
+
+**リクエスト例:**
+```json
+POST /auth/refresh
+
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+#### レスポンス
+
+**成功時（200 OK）:**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expiresIn": 3600
+  }
+}
+```
+
+| フィールド | 型 | 説明 |
+|-----------|------|------|
+| accessToken | string | 新しいアクセストークン |
+| refreshToken | string | 新しいリフレッシュトークン（ローテーション方式） |
+| expiresIn | number | アクセストークンの有効期限（秒） |
+
+**エラー時（401 Unauthorized）:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_TOKEN",
+    "message": "リフレッシュトークンが無効です"
+  }
+}
+```
+
+**エラー時（401 Unauthorized - 期限切れ）:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "EXPIRED_TOKEN",
+    "message": "リフレッシュトークンの有効期限が切れています。再度ログインしてください"
+  }
+}
+```
+
+#### 備考
+- リフレッシュトークンは1回使用すると無効化され、新しいリフレッシュトークンが発行される（ローテーション方式）
+- アクセストークンの有効期限: 1時間
+- リフレッシュトークンの有効期限: 7日間
+- 不正なリフレッシュトークンが使用された場合、セキュリティのため該当ユーザーの全セッションを無効化する可能性あり
+
 ## 4. イベントAPI
 
 ### 4.1 イベント一覧取得
@@ -407,7 +482,9 @@ interface Event {
   userId: number;
   name: string;
   categoryIcon: string;
-  lastExecutedAt: string;
+  lastExecutedHistoryId: string | null;
+  lastExecutedAt: string | null;   // 履歴から取得
+  lastExecutedMemo: string | null; // 履歴から取得
   createdAt: string;
   updatedAt: string;
 }
@@ -424,7 +501,9 @@ interface Event {
         "userId": 1,
         "name": "エアコンフィルター掃除",
         "categoryIcon": "leaf",
+        "lastExecutedHistoryId": "hist_1234567890",
         "lastExecutedAt": "2026-01-15T23:31:00Z",
+        "lastExecutedMemo": "フィルターを水洗いした",
         "createdAt": "2023-10-15T14:00:00Z",
         "updatedAt": "2026-01-15T23:31:00Z"
       },
@@ -433,7 +512,9 @@ interface Event {
         "userId": 1,
         "name": "運転免許更新",
         "categoryIcon": "folder",
+        "lastExecutedHistoryId": "hist_0987654321",
         "lastExecutedAt": "2023-10-15T14:00:00Z",
+        "lastExecutedMemo": null,
         "createdAt": "2023-10-15T14:00:00Z",
         "updatedAt": "2023-10-15T14:00:00Z"
       }
@@ -508,7 +589,8 @@ POST /events
 interface CreateEventRequest {
   name: string;           // イベント名（1〜100文字、必須）
   categoryIcon: string;   // カテゴリーアイコン（必須）
-  lastExecutedAt: string; // 最終実行日時（ISO 8601形式、必須）
+  executedAt: string;     // 初回実行日時（ISO 8601形式、必須）
+  memo?: string;          // メモ（任意、最大500文字）
 }
 ```
 
@@ -520,7 +602,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 {
   "name": "エアコンフィルター掃除",
   "categoryIcon": "leaf",
-  "lastExecutedAt": "2026-01-15T23:31:00Z"
+  "executedAt": "2026-01-15T23:31:00Z",
+  "memo": "フィルターを水洗いした"
 }
 ```
 
@@ -536,7 +619,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       "userId": 1,
       "name": "エアコンフィルター掃除",
       "categoryIcon": "leaf",
+      "lastExecutedHistoryId": "hist_1234567890",
       "lastExecutedAt": "2026-01-15T23:31:00Z",
+      "lastExecutedMemo": "フィルターを水洗いした",
       "createdAt": "2026-01-16T12:34:56Z",
       "updatedAt": "2026-01-16T12:34:56Z"
     }
@@ -570,10 +655,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
   - 必須
   - 以下のいずれか: pin, book, folder, star, chart, sun, person, hospital, medical, leaf, search, people, snowflake, fire, lightning
 
-- **lastExecutedAt**:
+- **executedAt**:
   - 必須
   - ISO 8601形式
   - 未来の日時は不可
+
+- **memo**:
+  - 任意
+  - 最大500文字
 
 ### 4.4 イベント更新
 
@@ -594,7 +683,6 @@ PUT /events/:id
 interface UpdateEventRequest {
   name: string;           // イベント名（1〜100文字、必須）
   categoryIcon: string;   // カテゴリーアイコン（必須）
-  lastExecutedAt: string; // 最終実行日時（ISO 8601形式、必須）
 }
 ```
 
@@ -605,10 +693,11 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 {
   "name": "エアコンフィルター掃除（更新）",
-  "categoryIcon": "leaf",
-  "lastExecutedAt": "2026-01-16T10:00:00Z"
+  "categoryIcon": "leaf"
 }
 ```
+
+**注意:** 最終実行日時は履歴から自動算出されるため、リクエストには含まれません。
 
 #### レスポンス
 
@@ -622,7 +711,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       "userId": 1,
       "name": "エアコンフィルター掃除（更新）",
       "categoryIcon": "leaf",
-      "lastExecutedAt": "2026-01-16T10:00:00Z",
+      "lastExecutedHistoryId": "hist_1234567890",
+      "lastExecutedAt": "2026-01-15T23:31:00Z",
+      "lastExecutedMemo": "フィルターを水洗いした",
       "createdAt": "2023-10-15T14:00:00Z",
       "updatedAt": "2026-01-16T12:40:00Z"
     }
@@ -833,7 +924,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **注意:**
-- 履歴エントリを追加すると、親イベントの `lastExecutedAt` が自動的に更新される
+- 履歴エントリを追加すると、親イベントの `lastExecutedHistoryId` が自動的に更新される
 
 ### 5.3 履歴更新
 
@@ -900,7 +991,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **注意:**
-- 履歴エントリを更新すると、親イベントの `lastExecutedAt` も再計算される
+- 履歴エントリを更新すると、親イベントの `lastExecutedHistoryId` も再計算される
 
 ### 5.4 履歴削除
 
@@ -934,6 +1025,17 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
+**エラー時（400 Bad Request - 最後の履歴削除）:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "LAST_HISTORY_DELETE_NOT_ALLOWED",
+    "message": "Cannot delete the last history entry. At least one history is required."
+  }
+}
+```
+
 **エラー時（404 Not Found）:**
 ```json
 {
@@ -945,8 +1047,47 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
+#### ステータスコード
+
+| コード | 説明 |
+|-------|------|
+| 200 | 削除成功 |
+| 400 | 最後の履歴削除エラー（最低1件必須） |
+| 401 | 認証が必要 |
+| 404 | 履歴が見つからない |
+| 500 | サーバー内部エラー |
+
+#### 削除ロジック
+
+```typescript
+// 削除可能判定
+const canDeleteHistory = async (eventId: string): Promise<boolean> => {
+  const historyCount = await historyRepository.count({ where: { eventId } });
+  return historyCount > 1;
+};
+
+// 削除処理
+const deleteHistory = async (eventId: string, historyId: string) => {
+  // 履歴件数をチェック
+  if (!(await canDeleteHistory(eventId))) {
+    throw new BadRequestError(
+      'LAST_HISTORY_DELETE_NOT_ALLOWED',
+      'Cannot delete the last history entry. At least one history is required.'
+    );
+  }
+  
+  // 削除実行
+  await historyRepository.delete(historyId);
+  
+  // 親イベントの lastExecutedHistoryId を再計算
+  await updateEventLastExecutedHistory(eventId);
+};
+```
+
 **注意:**
-- 履歴エントリを削除すると、親イベントの `lastExecutedAt` も再計算される
+- **履歴は最低1件必須**: イベントには常に1件以上の履歴が存在する必要がある
+- 削除リクエスト時、対象イベントの履歴が1件のみの場合は400エラーを返す
+- 履歴エントリを削除すると、親イベントの `lastExecutedHistoryId` も再計算される
 
 ## 6. 設定API
 
@@ -1035,7 +1176,7 @@ interface ReminderSettings {
 
 #### エンドポイント
 ```
-PATCH /settings
+PUT /settings
 ```
 
 #### 認証
@@ -1059,7 +1200,7 @@ interface UpdateSettingsRequest {
 
 **リクエスト例:**
 ```json
-PATCH /settings
+PUT /settings
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 {
@@ -1163,7 +1304,7 @@ evt_002,運転免許更新,folder,2023-10-15T14:00:00Z,2023-10-15T14:00:00Z,hist
 ```javascript
 // 本番環境
 Access-Control-Allow-Origin: https://example.com
-Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
 Access-Control-Allow-Headers: Content-Type, Authorization
 Access-Control-Allow-Credentials: true
 
