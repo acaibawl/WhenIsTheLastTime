@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "laravel-boost": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "witlt_php",
+        "php",
+        "artisan",
+        "boost:mcp"
+      ]
+    }
+  }
+}
