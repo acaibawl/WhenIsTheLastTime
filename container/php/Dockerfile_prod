@@ -40,8 +40,8 @@ RUN pecl install redis \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # ファイルコピーと権限設定
-COPY container/php/local.ini /usr/local/etc/php/conf.d/local.ini
 COPY ./backend /var/www/html
+COPY container/php/local.ini /usr/local/etc/php/conf.d/local.ini
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
