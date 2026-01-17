@@ -29,7 +29,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - Do not change the application's dependencies without approval.
 
 ## Frontend Bundling
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+- このプロジェクトはAPIバックエンドのみであり、フロントエンドのコードは含まれていません。フロントエンドに関する変更や提案は行わないでください。
 
 ## Replies
 - Be concise in your explanations - focus on what's important rather than explaining obvious details.
@@ -147,7 +147,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
 
 ### Vite Error
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+- このプロジェクトはAPIバックエンドのみであり、フロントエンドのコードは含まれていません。Viteに関連するエラーや警告が表示された場合、それらを無視してください。
 
 === laravel/v12 rules ===
 

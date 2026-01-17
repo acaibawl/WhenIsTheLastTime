@@ -5,5 +5,5 @@
     "editors": [
         "vscode"
     ],
-    "guidelines": []
+    "guidelines": [".github/copilot-instructions.md"]
 }
