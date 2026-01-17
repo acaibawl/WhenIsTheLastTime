@@ -41,11 +41,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # ファイルコピーと権限設定
 COPY container/php/local.ini /usr/local/etc/php/conf.d/local.ini
-# 開発環境ではコードはホストからマウントされるため、ここでコピーしない
-# COPY ./backend /var/www/html
-# RUN chown -R www-data:www-data /var/www/html \
-#     && chmod -R 755 /var/www/html/storage \
-#     && chmod -R 755 /var/www/html/bootstrap/cache
+COPY ./backend /var/www/html
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
 
 # ポート9000を公開
 EXPOSE 9000

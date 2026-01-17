@@ -29,7 +29,6 @@ services:
       - db
       - redis
       - mailpit
-    # TODO: あとで消す。動作確認用
     networks:
       - witlt_network
 
