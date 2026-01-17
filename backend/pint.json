@@ -1,0 +1,34 @@
+{
+    "preset": "laravel",
+    "cache-file": ".pint.cache",
+    "exclude": [
+        "database/migrations"
+    ],
+    "notPath": [
+        "lang/ja.json",
+        "lang/ja/auth.php",
+        "lang/ja/pagination.php",
+        "lang/ja/passwords.php",
+        "lang/ja/validation.php"
+    ],
+    "rules": {
+        "concat_space": false,
+        "date_time_immutable": true,
+        "declare_parentheses": true,
+        "declare_strict_types": true,
+        "mb_str_functions": true,
+        "new_with_braces": true,
+        "not_operator_with_successor_space": true,
+        "phpdoc_align": {
+            "align": "left"
+        },
+        "phpdoc_separation": false,
+        "php_unit_attributes": true,
+        "php_unit_data_provider_static": true,
+        "php_unit_test_case_static_method_calls": {
+            "call_type": "this"
+        },
+        "simplified_if_return": true,
+        "simplified_null_return": false
+    }
+}
