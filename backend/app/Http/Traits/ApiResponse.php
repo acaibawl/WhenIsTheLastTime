@@ -12,8 +12,8 @@ trait ApiResponse
     /**
      * Return a success response.
      *
-     * @param  array<string, mixed>|null  $data
-     * @param  array<string, mixed>  $headers
+     * @param array<string, mixed>|null $data
+     * @param array<string, mixed> $headers
      */
     protected function successResponse(
         ?array $data = null,
@@ -31,8 +31,8 @@ trait ApiResponse
     /**
      * Return an error response.
      *
-     * @param  array<string, mixed>|null  $errors
-     * @param  array<string, mixed>  $headers
+     * @param array<string, mixed>|null $errors
+     * @param array<string, mixed> $headers
      */
     protected function errorResponse(
         string $message = 'Error',
@@ -50,7 +50,7 @@ trait ApiResponse
     /**
      * Return a created response.
      *
-     * @param  array<string, mixed>|null  $data
+     * @param array<string, mixed>|null $data
      */
     protected function createdResponse(?array $data = null, string $message = 'Created'): JsonResponse
     {
@@ -92,7 +92,7 @@ trait ApiResponse
     /**
      * Return a validation error response.
      *
-     * @param  array<string, mixed>  $errors
+     * @param array<string, mixed> $errors
      */
     protected function validationErrorResponse(array $errors, string $message = 'Validation failed'): JsonResponse
     {

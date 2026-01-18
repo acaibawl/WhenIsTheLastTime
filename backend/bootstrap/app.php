@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()->json([
                 'success' => false,
                 'message' => 'Resource not found',
+                'errors' => null,
             ], 404);
         });
     })->create();

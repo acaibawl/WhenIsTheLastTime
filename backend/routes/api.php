@@ -16,4 +16,4 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/health', [HealthController::class, 'health']);
+Route::get('/health', [HealthController::class, 'checkHealth']);
