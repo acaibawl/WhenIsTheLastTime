@@ -1,0 +1,101 @@
+name: Backend Integration
+on:
+  pull_request:
+    paths:
+      - backend/**
+      - .github/workflows/back-integration.yml
+  push:
+    branches:
+      - main
+jobs:
+  unit-test:
+    name: run unit test
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    services:
+      redis:
+        image: redis:8.0.1
+        ports:
+          - "6379:6379"
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shutdown Ubuntu MySQL
+        run: sudo service mysql stop
+
+      - name: Setup MySQL Server
+        uses: shogo82148/actions-setup-mysql@v1
+        with:
+          mysql-version: '8.0'
+          my-cnf: |
+            [mysqld]
+            character-set-server=utf8mb4
+            collation-server=utf8mb4_general_ci
+            innodb_log_writer_threads=OFF
+            skip-log-bin
+            [client]
+            default-character-set=utf8mb4
+          root-password: 'root'
+          user: 'witlt_user'
+          password: 'witlt_password'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: imagick, dom, curl, libxml, mbstring, zip, pcntl, pdo, mysql, pdo_mysql, redis-6.2.0
+
+      - name: Setup /etc/hosts
+        run: |
+          sudo echo "127.0.0.1 mysql" | sudo tee -a /etc/hosts
+          sudo echo "127.0.0.1 redis" | sudo tee -a /etc/hosts
+
+      - name: Wait for MySQL Server
+        run: |
+          set +e
+          OUTPUT="Can't connect"
+          while [[ $OUTPUT != *"3.1415"* ]];
+          do OUTPUT=$(mysql -u root -proot -h 127.0.0.1 <<< "SELECT 3.1415" 2>&1); echo $OUTPUT; sleep 1;
+          done
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache composer dependencies
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Composer install
+        working-directory: ./backend
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Copy .env
+        run: cp .env.testing .env
+        working-directory: ./backend
+
+      - name: Run Migration & Seed for Test database
+        run: |
+          echo "migrate test databases..."
+          php artisan migrate --env=testing
+          # echo "seed data to test databases,..."
+          # php artisan db:seed --env=testing
+        working-directory: ./backend
+
+      - name: Cache route
+        run: |
+          php artisan optimize:clear --env=testing
+          php artisan route:cache --env=testing
+        working-directory: ./backend
+
+      - name: Run unit test(php artisan test)
+        run: php artisan test
+        working-directory: ./backend
