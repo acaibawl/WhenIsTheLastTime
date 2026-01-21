@@ -61,6 +61,10 @@ jobs:
           do OUTPUT=$(mysql -u root -proot -h 127.0.0.1 <<< "SELECT 3.1415" 2>&1); echo $OUTPUT; sleep 1;
           done
 
+      - name: Copy .env
+        run: cp .env.testing .env
+        working-directory: ./backend
+
       - name: Get composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
@@ -77,10 +81,6 @@ jobs:
         working-directory: ./backend
         if: steps.cache.outputs.cache-hit != 'true'
         run: composer install --no-interaction --no-progress --prefer-dist
-
-      - name: Copy .env
-        run: cp .env.testing .env
-        working-directory: ./backend
 
       - name: Run Migration & Seed for Test database
         run: |
