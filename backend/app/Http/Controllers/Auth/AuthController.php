@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -40,6 +42,7 @@ class AuthController extends Controller
     {
         /** @var JWTGuard $guard */
         $guard = auth()->guard('api');
+
         // @phpstan-ignore method.notFound
         return $this->respondWithToken($guard->refresh());
     }
