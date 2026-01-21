@@ -54,13 +54,13 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_DATABASE=witlt
       - MYSQL_USER=witlt_user
       - MYSQL_PASSWORD=witlt_password
       - MYSQL_ROOT_PASSWORD=root_password
       - TZ=Asia/Tokyo
     volumes:
       - db_data:/var/lib/mysql
+      - ./container/mysql/sql:/docker-entrypoint-initdb.d
       - ./container/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
     networks:
       - witlt_network
