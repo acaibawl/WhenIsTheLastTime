@@ -72,6 +72,9 @@
         ],
         "analyse": [
             "./vendor/bin/phpstan analyse --memory-limit=1G"
+        ],
+        "lint": [
+            "./vendor/bin/pint --test -v"
         ]
     },
     "extra": {
