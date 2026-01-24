@@ -43,7 +43,6 @@ class AuthController extends Controller
         /** @var JWTGuard $guard */
         $guard = auth()->guard('api');
 
-        // @phpstan-ignore method.notFound
         return $this->respondWithToken($guard->refresh());
     }
 
