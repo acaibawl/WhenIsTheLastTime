@@ -1,0 +1,54 @@
+name: Backend Analyse
+on:
+  pull_request:
+    paths:
+      - backend/**
+      - .github/workflows/back-analyse.yml
+  workflow_dispatch:
+jobs:
+  analyse:
+    name: PHP Static Analysis
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Shutdown Ubuntu MySQL
+        run: sudo service mysql stop
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, mysql, pdo_mysql, redis-6.2.0
+          coverage: none
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: composer install --no-interaction --no-progress
+
+      - name: Generate Laravel cache for static analysis
+        working-directory: ./backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan package:discover
+
+      - name: Check coding styles with Laravel Pint (php codesniffer)
+        working-directory: ./backend
+        run: composer lint
+
+      - name: Run PHP Static Analysis
+        working-directory: ./backend
+        run: composer analyse
