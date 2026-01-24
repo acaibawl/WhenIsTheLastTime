@@ -15,8 +15,10 @@ class AuthController extends Controller
     {
         $credentials = $request->validated();
         // email・password（自動でハッシュする）で検索をかけて、一致するuserがいればtokenを設定。なければfalseが入る
+        /** @var JWTGuard $guard */
+        $guard = auth()->guard('api');
         /** @var mixed $token */
-        $token = auth()->guard('api')->attempt($credentials);
+        $token = $guard->attempt($credentials);
         if (! $token) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -33,7 +35,9 @@ class AuthController extends Controller
 
     public function logout(): JsonResponse
     {
-        auth()->guard('api')->logout();
+        /** @var JWTGuard $guard */
+        $guard = auth()->guard('api');
+        $guard->logout();
 
         return response()->json(['message' => 'Successfully logged out']);
     }

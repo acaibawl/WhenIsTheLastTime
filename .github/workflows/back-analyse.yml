@@ -38,6 +38,13 @@ jobs:
         working-directory: ./backend
         run: composer install --no-interaction --no-progress
 
+      - name: Generate Laravel cache for static analysis
+        working-directory: ./backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan package:discover
+
       - name: Check coding styles with Laravel Pint (php codesniffer)
         working-directory: ./backend
         run: composer lint
