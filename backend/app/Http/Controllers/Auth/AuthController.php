@@ -14,9 +14,9 @@ class AuthController extends Controller
     public function login(LoginPost $request): JsonResponse
     {
         $credentials = $request->validated();
-        // email・password（自動でハッシュする）で検索をかけて、一致するuserがいればtokenを設定。なければfalseが入る
         /** @var JWTGuard $guard */
         $guard = auth()->guard('api');
+        // email・password（自動でハッシュする）で検索をかけて、一致するuserがいればtokenを設定。なければfalseが入る
         /** @var mixed $token */
         $token = $guard->attempt($credentials);
         if (! $token) {

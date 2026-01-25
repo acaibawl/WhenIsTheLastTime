@@ -22,7 +22,7 @@ class AuthControllerTest extends TestCase
     public function test_login_success(): void
     {
         $user = User::factory()->create([
-            'password' => \Hash::make('password'),
+            'password_hash' => \Hash::make('password'),
         ]);
 
         $requestBody = [
@@ -116,7 +116,7 @@ class AuthControllerTest extends TestCase
     {
         User::factory()->create([
             'email' => 'acai@example.com',
-            'password' => \Hash::make('password'),
+            'password_hash' => \Hash::make('password'),
         ]);
         $response = $this->postJson('/auth/login', $requestBody);
         $response->assertUnauthorized();
