@@ -21,7 +21,6 @@ class EventFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => Event::generateId(),
             'user_id' => User::factory(),
             'name' => fake()->sentence(3),
             'category_icon' => fake()->randomElement(Event::CATEGORY_ICONS),
