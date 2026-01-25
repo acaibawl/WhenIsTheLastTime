@@ -92,6 +92,15 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
+     * Get the password for the user.
+     * カラム名がpassword_hashのため、認証時に使用するパスワードを指定する
+     */
+    public function getAuthPassword(): string
+    {
+        return $this->password_hash;
+    }
+
+    /**
      * Get all events for the user.
      *
      * @return HasMany<Event, $this>
