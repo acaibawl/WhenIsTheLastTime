@@ -118,4 +118,19 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Verification Code Settings
+    |--------------------------------------------------------------------------
+    |
+    | These options define the settings for email verification codes used
+    | during the registration process. You can adjust the TTL (time to live),
+    | maximum attempts, and resend cooldown period.
+    |
+    */
+
+    'verification_code_ttl' => env('VERIFICATION_CODE_TTL', 600),
+    'verification_code_max_attempts' => env('VERIFICATION_CODE_MAX_ATTEMPTS', 5),
+    'verification_code_resend_cooldown' => env('VERIFICATION_CODE_RESEND_COOLDOWN', 60),
+
 ];
