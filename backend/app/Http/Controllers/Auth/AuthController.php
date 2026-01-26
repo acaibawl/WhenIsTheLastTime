@@ -23,7 +23,7 @@ class AuthController extends Controller
     /**
      * 認証コード送信API
      */
-    public function sendCode(SendCodePost $request): JsonResponse
+    public function sendVerificationCode(SendCodePost $request): JsonResponse
     {
         $validated = $request->validated();
         $email = $validated['email'];
@@ -106,7 +106,7 @@ class AuthController extends Controller
     /**
      * 認証コード検証・登録完了API
      */
-    public function verifyCode(VerifyCodePost $request): JsonResponse
+    public function verifyRegistrationCode(VerifyCodePost $request): JsonResponse
     {
         $validated = $request->validated();
         $email = $validated['email'];
@@ -209,7 +209,7 @@ class AuthController extends Controller
     /**
      * 認証コード再送信API
      */
-    public function resendCode(ResendCodePost $request): JsonResponse
+    public function resendVerificationCode(ResendCodePost $request): JsonResponse
     {
         $validated = $request->validated();
         $email = $validated['email'];
