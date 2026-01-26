@@ -23,6 +23,14 @@ Route::middleware('api')->group(function () {
     Route::prefix('auth')
         ->name('auth.')
         ->group(function () {
+            Route::prefix('/register')->group(function () {
+                // 1分間に5回までのリクエストを許可
+                Route::post('/send-code', [AuthController::class, 'sendVerificationCode'])
+                    ->middleware('throttle:5,1')
+                    ->name('register.send-code');
+                Route::post('/verify', [AuthController::class, 'verifyRegistrationCode'])->name('register.verify');
+                Route::post('/resend-code', [AuthController::class, 'resendVerificationCode'])->name('register.resend-code');
+            });
             Route::post('/login', [AuthController::class, 'login'])->name('login');
             Route::middleware('auth:api')->group(function () {
                 Route::get('/me', [AuthController::class, 'me'])->name('me');

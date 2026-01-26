@@ -32,13 +32,17 @@ class AuthControllerTest extends TestCase
         $response = $this->postJson('/auth/login', $requestBody);
 
         $response->assertStatus(200);
-        $response->assertJson(fn (AssertableJson $json) => $json->hasAll(
-            [
-                'access_token',
-                'token_type',
-                'expires_in',
-            ])
-            ->where('token_type', 'bearer')
+        $response->assertJson(fn (AssertableJson $json) => $json
+            ->where('success', true)
+            ->has('data', fn (AssertableJson $data) => $data
+                ->has('user', fn (AssertableJson $userData) => $userData
+                    ->where('id', $user->id)
+                    ->where('email', $user->email)
+                    ->where('nickname', $user->nickname)
+                    ->has('createdAt')
+                )
+                ->has('accessToken')
+            )
         );
     }
 
@@ -178,7 +182,7 @@ class AuthControllerTest extends TestCase
             'password' => 'password',
         ];
         $loginResponse = $this->postJson('/auth/login', $loginRequestBody);
-        $authHeader = 'Bearer ' . $loginResponse->json()['access_token'];
+        $authHeader = 'Bearer ' . $loginResponse->json()['data']['accessToken'];
 
         // ログアウト処理
         $logoutResponse = $this->postJson('/auth/logout', [], [
