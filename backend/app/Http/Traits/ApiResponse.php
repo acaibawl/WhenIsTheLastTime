@@ -98,4 +98,24 @@ trait ApiResponse
     {
         return $this->errorResponse($message, Response::HTTP_UNPROCESSABLE_ENTITY, $errors);
     }
+
+    /**
+     * Return a success response with meta information.
+     *
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $headers
+     */
+    protected function successResponseWithMeta(
+        array $data,
+        int $code = Response::HTTP_OK,
+        array $headers = []
+    ): JsonResponse {
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+            'meta' => [
+                'timestamp' => now()->toIso8601String(),
+            ],
+        ], $code, $headers);
+    }
 }

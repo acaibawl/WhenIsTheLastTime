@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\HealthController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,4 +39,9 @@ Route::middleware('api')->group(function () {
                 Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');
             });
         });
+
+    // Events API
+    Route::middleware('auth:api')->group(function () {
+        Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    });
 });
