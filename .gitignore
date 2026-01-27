@@ -29,5 +29,6 @@ Homestead.json
 .phpactor.json
 auth.json
 
+.pint.cache
 .DS_Store
 .idea
