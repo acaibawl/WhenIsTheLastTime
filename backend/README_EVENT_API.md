@@ -111,7 +111,7 @@ Authorization: Bearer {access_token}
 [EventController::index]
     ↓ Event::where('user_id', $user->id)->with('lastExecutedHistory')->get()
 [データベース]
-    ↓ events テーブル + histories テーブル (JOIN)
+    ↓ 2つのクエリで取得 (events テーブル + histories テーブル WHERE IN)
 [EventController::index]
     ↓ データ整形 (camelCase変換、ISO 8601形式)
 [JSONレスポンス]
