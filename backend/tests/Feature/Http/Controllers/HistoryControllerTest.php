@@ -237,7 +237,7 @@ class HistoryControllerTest extends TestCase
         $response->assertNotFound()
             ->assertJson([
                 'success' => false,
-                'message' => 'Event not found',
+                'message' => 'Resource not found',
             ]);
     }
 
@@ -492,7 +492,7 @@ class HistoryControllerTest extends TestCase
         $response->assertNotFound()
             ->assertJson([
                 'success' => false,
-                'message' => 'Event not found',
+                'message' => 'Resource not found',
             ]);
     }
 
@@ -943,7 +943,7 @@ class HistoryControllerTest extends TestCase
         $response->assertNotFound()
             ->assertJson([
                 'success' => false,
-                'message' => 'Event not found',
+                'message' => 'Resource not found',
             ]);
     }
 

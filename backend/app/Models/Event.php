@@ -120,4 +120,20 @@ class Event extends Model
     {
         return 'id';
     }
+
+    /**
+     * ルートモデルバインディングのカスタム解決
+     *
+     * prefix付きULIDに対応し、認証済みユーザーのイベントのみ取得
+     *
+     * @param mixed $value
+     * @param string|null $field
+     * @return Event|null
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        return $this->where('id', $value)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+    }
 }

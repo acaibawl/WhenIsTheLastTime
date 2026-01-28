@@ -137,7 +137,7 @@ class EventControllerDeleteTest extends TestCase
         $response->assertStatus(404)
             ->assertJson([
                 'success' => false,
-                'message' => 'Event not found',
+                'message' => 'Resource not found',
             ]);
 
         // イベントが削除されていないことを確認
