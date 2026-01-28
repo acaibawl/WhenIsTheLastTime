@@ -25,14 +25,12 @@ class SettingController extends Controller
         $user = $request->user();
 
         // ユーザー設定を取得（存在しない場合はデフォルト値で作成）
-        $userSetting = $user->setting;
+        $userSetting = $user->setting()->firstOrCreate(
+            [],
+            ['settings_json' => UserSetting::getDefaultSettings()]
+        );
 
-        if (! $userSetting) {
-            $userSetting = UserSetting::create([
-                'user_id' => $user->id,
-                'settings_json' => UserSetting::getDefaultSettings(),
-            ]);
-
+        if ($userSetting->wasRecentlyCreated) {
             Log::info('User settings created with default values', [
                 'user_id' => $user->id,
             ]);
@@ -54,15 +52,12 @@ class SettingController extends Controller
         DB::beginTransaction();
         try {
             // ユーザー設定を取得（存在しない場合はデフォルト値で作成）
-            $userSetting = $user->setting;
+            $userSetting = $user->setting()->firstOrCreate(
+                [],
+                ['settings_json' => UserSetting::getDefaultSettings()]
+            );
 
-            if (! $userSetting) {
-                /** @var UserSetting $userSetting */
-                $userSetting = UserSetting::create([
-                    'user_id' => $user->id,
-                    'settings_json' => UserSetting::getDefaultSettings(),
-                ]);
-
+            if ($userSetting->wasRecentlyCreated) {
                 Log::info('User settings created with default values on update', [
                     'user_id' => $user->id,
                 ]);

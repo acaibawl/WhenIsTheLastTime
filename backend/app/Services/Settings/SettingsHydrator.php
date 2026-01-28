@@ -38,7 +38,7 @@ class SettingsHydrator
         // Export settings
         if (isset($data['export'])) {
             $export = $settings->export;
-            if (isset($data['export']['lastExportedAt'])) {
+            if (array_key_exists('lastExportedAt', $data['export'])) {
                 $export = $export->withLastExportedAt($data['export']['lastExportedAt']);
             }
             $settings = $settings->withExport($export);

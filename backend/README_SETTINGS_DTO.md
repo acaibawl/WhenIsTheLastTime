@@ -28,7 +28,10 @@ Settings
 ### ユーティリティクラス
 
 - `SettingsHydrator`: 配列 → オブジェクトへの変換
+  - `hydrate(array $data): Settings` - 配列を Settings オブジェクトに変換
+  - `merge(Settings $settings, array $data): Settings` - 既存の Settings オブジェクトに部分的な配列データをマージ
 - `SettingsDehydrator`: オブジェクト → 配列への変換
+  - `dehydrate(Settings $settings): array` - Settings オブジェクトを配列に変換
 
 ## 使用方法
 
@@ -96,38 +99,84 @@ $userSetting->setSettings($newSettings);
 $userSetting->save();
 ```
 
-### 3. 部分的な更新
+### 3. 部分的な更新（推奨）
+
+`SettingsHydrator::merge()`メソッドを使用することで、ネストされた設定の部分的な更新を安全かつ簡潔に行えます。
 
 ```php
 use App\Services\Settings\SettingsHydrator;
 use App\Services\Settings\SettingsDehydrator;
 
-// 既存設定を配列として取得
-$currentArray = $userSetting->settings_json;
+// 既存設定をオブジェクトとして取得
+$settings = $userSetting->getSettings();
 
-// 部分的な更新データ
+// 部分的な更新データ（配列）
 $updates = [
     'misc' => [
         'showTutorial' => false,
     ],
 ];
 
-// マージ
-$currentArray['misc'] = array_merge(
-    $currentArray['misc'] ?? [],
-    $updates['misc']
-);
+// マージ（既存の設定と更新データをマージして新しいオブジェクトを返す）
+$updatedSettings = SettingsHydrator::merge($settings, $updates);
 
-// オブジェクトに変換して確認
-$settings = SettingsHydrator::hydrate($currentArray);
-echo $settings->misc->showTutorial; // false
+// 確認
+echo $updatedSettings->misc->showTutorial; // false
+echo $updatedSettings->export->lastExportedAt; // 既存の値は保持される
 
 // モデルに保存
-$userSetting->settings_json = $currentArray;
+$userSetting->setSettings($updatedSettings);
 $userSetting->save();
 ```
 
+#### ネストされた設定の部分更新
+
+```php
+// notification.reminder.timing.time のみを更新
+$updates = [
+    'notification' => [
+        'reminder' => [
+            'timing' => [
+                'time' => '21:00',
+            ],
+        ],
+    ],
+];
+
+$updatedSettings = SettingsHydrator::merge($settings, $updates);
+
+// timing.time のみが更新され、他のプロパティは保持される
+echo $updatedSettings->notification->reminder->timing->time; // '21:00'
+echo $updatedSettings->notification->reminder->timing->type; // 'daily' (変更なし)
+echo $updatedSettings->notification->reminder->enabled; // false (変更なし)
+```
+
+#### 複数の設定を同時に更新
+
+```php
+$updates = [
+    'export' => [
+        'lastExportedAt' => '2026-01-28T12:00:00Z',
+    ],
+    'notification' => [
+        'reminder' => [
+            'enabled' => true,
+            'targetEvents' => 'month',
+        ],
+    ],
+    'misc' => [
+        'showTutorial' => false,
+    ],
+];
+
+$updatedSettings = SettingsHydrator::merge($settings, $updates);
+
+// すべての更新が反映される
+```
+
 ### 4. コントローラーでの使用例
+
+#### 設定取得
 
 ```php
 use App\Http\Controllers\Controller;
@@ -156,6 +205,41 @@ class SettingController extends Controller
 
         return $this->successResponse([
             'settings' => $settings,
+        ]);
+    }
+}
+```
+
+#### 設定更新（merge メソッドを使用）
+
+```php
+use App\Http\Requests\UpdateSettingRequest;
+use App\Services\Settings\SettingsDehydrator;
+use App\Services\Settings\SettingsHydrator;
+
+class SettingController extends Controller
+{
+    public function update(UpdateSettingRequest $request): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $userSetting = $user->setting;
+
+        // 既存の設定をオブジェクトに変換
+        $settings = SettingsHydrator::hydrate($userSetting->settings_json);
+
+        // リクエストデータを取得
+        $validated = $request->validated();
+
+        // Settings オブジェクトを更新（マージ処理）
+        $settings = SettingsHydrator::merge($settings, $validated);
+
+        // Settings オブジェクトを配列に変換してデータベースに保存
+        $userSetting->settings_json = SettingsDehydrator::dehydrate($settings);
+        $userSetting->save();
+
+        return $this->successResponse([
+            'settings' => new SettingResource($userSetting),
         ]);
     }
 }
@@ -268,5 +352,14 @@ class SettingsTest extends TestCase
 
 - `settings_json`を型安全なオブジェクトとして扱えるようになりました
 - readonly プロパティにより、不変性が保証されます
+- `SettingsHydrator::merge()`メソッドにより、ネストされた設定の部分更新が安全かつ簡潔に行えます
 - IDEの補完とPHPStanの静的解析により、開発効率と安全性が向上します
 - 既存のコードとの互換性を保ちながら、段階的に移行できます
+
+### ベストプラクティス
+
+1. **設定の取得**: `$userSetting->getSettings()` を使用してオブジェクトとして取得
+2. **部分的な更新**: `SettingsHydrator::merge($settings, $updates)` を使用
+3. **完全な置き換え**: 新しい Settings オブジェクトを作成して `$userSetting->setSettings($newSettings)` を使用
+4. **データベース保存前**: 必ず `SettingsDehydrator::dehydrate($settings)` で配列に変換
+5. **型安全性**: オブジェクトのプロパティに直接アクセスし、PHPStanで静的解析を実行
