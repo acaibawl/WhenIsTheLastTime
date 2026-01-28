@@ -2,33 +2,27 @@
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
-    '@nuxt/ui'
+    '@nuxt/ui',
   ],
 
   devtools: {
-    enabled: true
+    enabled: true,
   },
 
-  css: ['~/assets/css/main.css'],
+  css: [
+    'modern-css-reset',
+    '~/assets/css/main.css',
+  ],
 
   routeRules: {
-    '/': { prerender: true }
+    '/': { prerender: true },
   },
 
   compatibilityDate: '2025-01-15',
 
   vite: {
     server: {
-      allowedHosts: ['frontend.local']
-    }
+      allowedHosts: ['frontend.local'],
+    },
   },
-
-  eslint: {
-    config: {
-      stylistic: {
-        commaDangle: 'never',
-        braceStyle: '1tbs'
-      }
-    }
-  }
-})
+});
