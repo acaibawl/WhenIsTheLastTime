@@ -105,8 +105,6 @@ class HistoryController extends Controller
         try {
             // 履歴が最後の1件かチェック
             if ($event->histories()->count() <= 1) {
-                DB::rollBack();
-
                 return $this->errorResponse(
                     '最後の履歴は削除できません。イベントには最低1件の履歴が必要です。',
                     JsonResponse::HTTP_BAD_REQUEST
