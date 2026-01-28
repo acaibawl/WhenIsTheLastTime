@@ -76,4 +76,12 @@ class History extends Model
     {
         return 'hist_' . (string) Str::ulid();
     }
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'id';
+    }
 }

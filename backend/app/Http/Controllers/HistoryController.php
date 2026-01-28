@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreHistoryRequest;
+use App\Http\Requests\UpdateHistoryRequest;
 use App\Http\Resources\HistoryResource;
 use App\Models\Event;
 use App\Models\History;
@@ -76,6 +77,53 @@ class HistoryController extends Controller
                 ],
                 JsonResponse::HTTP_CREATED
             );
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Update a specific history entry.
+     */
+    public function update(UpdateHistoryRequest $request, Event $event, string $history): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        // 認証ユーザーのイベントかチェック
+        if ($event->user_id !== $user->id) {
+            return $this->notFoundResponse('Event not found');
+        }
+
+        // 履歴を取得
+        $historyModel = History::find($history);
+        if (! $historyModel || $historyModel->event_id !== $event->id) {
+            return $this->notFoundResponse('History not found');
+        }
+
+        DB::beginTransaction();
+        try {
+            // 履歴を更新
+            $historyModel->update([
+                'executed_at' => $request->input('executedAt'),
+                'memo' => $request->input('memo'),
+            ]);
+
+            // 最新の履歴を取得してイベントの最終実行履歴を更新
+            $latestHistory = $event->histories()
+                ->orderBy('executed_at', 'desc')
+                ->first();
+
+            $event->update([
+                'last_executed_history_id' => $latestHistory->id,
+            ]);
+
+            DB::commit();
+
+            return $this->successResponseWithMeta([
+                'history' => new HistoryResource($historyModel->fresh()),
+            ]);
         } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;
