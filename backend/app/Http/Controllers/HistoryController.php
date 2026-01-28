@@ -67,7 +67,7 @@ class HistoryController extends Controller
     {
         // 履歴がイベントに属しているかチェック
         if ($history->event_id !== $event->id) {
-            return $this->notFoundResponse('History not found');
+            return $this->notFoundResponse('履歴が見つかりません');
         }
 
         DB::beginTransaction();
@@ -85,6 +85,45 @@ class HistoryController extends Controller
             return $this->successResponseWithMeta([
                 'history' => new HistoryResource($history->fresh()),
             ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Delete a specific history entry.
+     */
+    public function destroy(Event $event, History $history): JsonResponse
+    {
+        // 履歴がイベントに属しているかチェック
+        if ($history->event_id !== $event->id) {
+            return $this->notFoundResponse('履歴が見つかりません');
+        }
+
+        // 履歴が最後の1件かチェック
+        $historyCount = $event->histories()->count();
+        if ($historyCount <= 1) {
+            return $this->errorResponse(
+                '最後の履歴は削除できません。イベントには最低1件の履歴が必要です。',
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
+
+        DB::beginTransaction();
+        try {
+            // 履歴を削除
+            $history->delete();
+
+            // 最終実行履歴を再計算
+            $event->updateLastExecutedHistory();
+
+            DB::commit();
+
+            return $this->successResponse(
+                null,
+                '履歴を削除しました'
+            );
         } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;

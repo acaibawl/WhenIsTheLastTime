@@ -55,6 +55,7 @@ Route::middleware('api')->group(function () {
                 Route::get('/', [HistoryController::class, 'index'])->name('events.history.index');
                 Route::post('/', [HistoryController::class, 'store'])->name('events.history.store');
                 Route::put('/{history}', [HistoryController::class, 'update'])->name('events.history.update');
+                Route::delete('/{history}', [HistoryController::class, 'destroy'])->name('events.history.destroy');
             });
         });
     });
