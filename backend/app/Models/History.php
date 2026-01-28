@@ -84,4 +84,22 @@ class History extends Model
     {
         return 'id';
     }
+
+    /**
+     * ルートモデルバインディングのカスタム解決
+     *
+     * prefix付きULIDに対応し、認証済みユーザーのイベントに紐づく履歴のみ取得
+     *
+     * @param mixed $value
+     * @param string|null $field
+     * @return History|null
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        return $this->where('id', $value)
+            ->whereHas('event', function ($query) {
+                $query->where('user_id', auth()->id());
+            })
+            ->firstOrFail();
+    }
 }

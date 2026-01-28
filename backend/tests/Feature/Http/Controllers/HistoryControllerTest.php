@@ -875,7 +875,7 @@ class HistoryControllerTest extends TestCase
         $response->assertNotFound()
             ->assertJson([
                 'success' => false,
-                'message' => 'History not found',
+                'message' => 'Resource not found',
             ]);
     }
 

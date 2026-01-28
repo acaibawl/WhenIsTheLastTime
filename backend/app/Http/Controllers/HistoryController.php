@@ -20,14 +20,6 @@ class HistoryController extends Controller
      */
     public function index(Request $request, Event $event): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-
-        // 認証ユーザーのイベントかチェック
-        if ($event->user_id !== $user->id) {
-            return $this->notFoundResponse('Event not found');
-        }
-
         // 履歴を取得（最新順）
         $histories = $event->histories()
             ->orderBy('executed_at', 'desc')
@@ -43,14 +35,6 @@ class HistoryController extends Controller
      */
     public function store(StoreHistoryRequest $request, Event $event): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-
-        // 認証ユーザーのイベントかチェック
-        if ($event->user_id !== $user->id) {
-            return $this->notFoundResponse('Event not found');
-        }
-
         DB::beginTransaction();
         try {
             // 履歴を作成
@@ -86,26 +70,17 @@ class HistoryController extends Controller
     /**
      * Update a specific history entry.
      */
-    public function update(UpdateHistoryRequest $request, Event $event, string $history): JsonResponse
+    public function update(UpdateHistoryRequest $request, Event $event, History $history): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-
-        // 認証ユーザーのイベントかチェック
-        if ($event->user_id !== $user->id) {
-            return $this->notFoundResponse('Event not found');
-        }
-
-        // 履歴を取得
-        $historyModel = History::find($history);
-        if (! $historyModel || $historyModel->event_id !== $event->id) {
+        // 履歴がイベントに属しているかチェック
+        if ($history->event_id !== $event->id) {
             return $this->notFoundResponse('History not found');
         }
 
         DB::beginTransaction();
         try {
             // 履歴を更新
-            $historyModel->update([
+            $history->update([
                 'executed_at' => $request->input('executedAt'),
                 'memo' => $request->input('memo'),
             ]);
@@ -122,7 +97,7 @@ class HistoryController extends Controller
             DB::commit();
 
             return $this->successResponseWithMeta([
-                'history' => new HistoryResource($historyModel->fresh()),
+                'history' => new HistoryResource($history->fresh()),
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
