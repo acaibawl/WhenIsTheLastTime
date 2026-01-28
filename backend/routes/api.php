@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\HistoryController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -40,12 +41,15 @@ Route::middleware('api')->group(function () {
             });
         });
 
-    // Events API
     Route::middleware('auth:api')->group(function () {
+        // Events API
         Route::get('/events', [EventController::class, 'index'])->name('events.index');
-        Route::get('/events/{id}', [EventController::class, 'show'])->name('events.show');
+        Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
         Route::post('/events', [EventController::class, 'store'])->name('events.store');
-        Route::put('/events/{id}', [EventController::class, 'update'])->name('events.update');
-        Route::delete('/events/{id}', [EventController::class, 'destroy'])->name('events.destroy');
+        Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
+        Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+
+        // History API
+        Route::get('/events/{event}/history', [HistoryController::class, 'index'])->name('events.history.index');
     });
 });

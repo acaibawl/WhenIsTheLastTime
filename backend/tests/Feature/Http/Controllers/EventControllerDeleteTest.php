@@ -111,7 +111,7 @@ class EventControllerDeleteTest extends TestCase
             ])
             ->assertJson([
                 'success' => false,
-                'message' => 'Event not found',
+                'message' => 'Resource not found',
             ]);
     }
 

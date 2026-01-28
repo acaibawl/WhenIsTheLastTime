@@ -93,7 +93,7 @@ class EventControllerShowTest extends TestCase
         $response->assertStatus(404)
             ->assertJson([
                 'success' => false,
-                'message' => 'Event not found',
+                'message' => 'Resource not found',
             ]);
     }
 

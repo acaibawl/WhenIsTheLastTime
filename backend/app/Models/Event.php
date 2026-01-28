@@ -112,4 +112,12 @@ class Event extends Model
     {
         return 'evt_' . (string) Str::ulid();
     }
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'id';
+    }
 }
