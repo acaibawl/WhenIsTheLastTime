@@ -62,5 +62,6 @@ Route::middleware('api')->group(function () {
 
         // Settings API
         Route::get('/settings', [SettingController::class, 'show'])->name('settings.show');
+        Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
     });
 });

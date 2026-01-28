@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\DataTransferObjects\Settings\Settings;
+use App\Services\Settings\SettingsDehydrator;
+use App\Services\Settings\SettingsHydrator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -89,5 +92,21 @@ class UserSetting extends Model
                 'showTutorial' => true,
             ],
         ];
+    }
+
+    /**
+     * Get settings as object.
+     */
+    public function getSettings(): Settings
+    {
+        return SettingsHydrator::hydrate($this->settings_json);
+    }
+
+    /**
+     * Set settings from object.
+     */
+    public function setSettings(Settings $settings): void
+    {
+        $this->settings_json = SettingsDehydrator::dehydrate($settings);
     }
 }
