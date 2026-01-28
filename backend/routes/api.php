@@ -54,6 +54,7 @@ Route::middleware('api')->group(function () {
             Route::prefix('/{event}/history')->group(function () {
                 Route::get('/', [HistoryController::class, 'index'])->name('events.history.index');
                 Route::post('/', [HistoryController::class, 'store'])->name('events.history.store');
+                Route::put('/{history}', [HistoryController::class, 'update'])->name('events.history.update');
             });
         });
     });

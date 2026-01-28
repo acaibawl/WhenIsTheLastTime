@@ -120,4 +120,34 @@ class Event extends Model
     {
         return 'id';
     }
+
+    /**
+     * ルートモデルバインディングのカスタム解決
+     *
+     * prefix付きULIDに対応し、認証済みユーザーのイベントのみ取得
+     *
+     * @param mixed $value
+     * @param string|null $field
+     * @return Event|null
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        return $this->where('id', $value)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+    }
+
+    /**
+     * Update the last executed history ID to the latest history.
+     */
+    public function updateLastExecutedHistory(): void
+    {
+        $latestHistory = $this->histories()
+            ->latest('executed_at')
+            ->first();
+
+        $this->update([
+            'last_executed_history_id' => $latestHistory?->id,
+        ]);
+    }
 }

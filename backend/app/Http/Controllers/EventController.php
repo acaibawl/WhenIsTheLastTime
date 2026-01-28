@@ -42,11 +42,6 @@ class EventController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        // 認証ユーザーのイベントかチェック
-        if ($event->user_id !== $user->id) {
-            return $this->notFoundResponse('Event not found');
-        }
-
         // リレーションをロード
         $event->load('lastExecutedHistory');
 
@@ -116,11 +111,6 @@ class EventController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        // 認証ユーザーのイベントかチェック
-        if ($event->user_id !== $user->id) {
-            return $this->notFoundResponse('Event not found');
-        }
-
         DB::beginTransaction();
         try {
             // イベントを更新
@@ -159,11 +149,6 @@ class EventController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-
-        // 認証ユーザーのイベントかチェック
-        if ($event->user_id !== $user->id) {
-            return $this->notFoundResponse('Event not found');
-        }
 
         DB::beginTransaction();
         try {
