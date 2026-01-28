@@ -44,14 +44,7 @@ class HistoryController extends Controller
                 'memo' => $request->input('memo'),
             ]);
 
-            // 最新の履歴を取得してイベントの最終実行履歴を更新
-            $latestHistory = $event->histories()
-                ->orderBy('executed_at', 'desc')
-                ->first();
-
-            $event->update([
-                'last_executed_history_id' => $latestHistory->id,
-            ]);
+            $event->updateLastExecutedHistory();
 
             DB::commit();
 
@@ -85,14 +78,7 @@ class HistoryController extends Controller
                 'memo' => $request->input('memo'),
             ]);
 
-            // 最新の履歴を取得してイベントの最終実行履歴を更新
-            $latestHistory = $event->histories()
-                ->orderBy('executed_at', 'desc')
-                ->first();
-
-            $event->update([
-                'last_executed_history_id' => $latestHistory->id,
-            ]);
+            $event->updateLastExecutedHistory();
 
             DB::commit();
 

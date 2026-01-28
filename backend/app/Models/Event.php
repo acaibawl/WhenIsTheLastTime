@@ -136,4 +136,18 @@ class Event extends Model
             ->where('user_id', auth()->id())
             ->firstOrFail();
     }
+
+    /**
+     * Update the last executed history ID to the latest history.
+     */
+    public function updateLastExecutedHistory(): void
+    {
+        $latestHistory = $this->histories()
+            ->latest('executed_at')
+            ->first();
+
+        $this->update([
+            'last_executed_history_id' => $latestHistory?->id,
+        ]);
+    }
 }
