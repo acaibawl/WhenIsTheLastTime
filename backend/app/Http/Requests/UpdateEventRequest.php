@@ -25,7 +25,7 @@ class UpdateEventRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'min:1', 'max:100', 'regex:/\S/'],
+            'name' => ['required', 'string', 'max:100'],
             'categoryIcon' => ['required', 'string', 'in:' . implode(',', Event::CATEGORY_ICONS)],
         ];
     }
@@ -39,9 +39,7 @@ class UpdateEventRequest extends FormRequest
     {
         return [
             'name.required' => 'イベント名は必須です',
-            'name.min' => 'イベント名は1文字以上で入力してください',
             'name.max' => 'イベント名は100文字以内で入力してください',
-            'name.regex' => 'イベント名に空白のみは使用できません',
             'categoryIcon.required' => 'カテゴリーアイコンは必須です',
             'categoryIcon.in' => '無効なカテゴリーアイコンです',
         ];

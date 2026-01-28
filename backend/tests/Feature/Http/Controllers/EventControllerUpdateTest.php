@@ -130,7 +130,10 @@ class EventControllerUpdateTest extends TestCase
             ->putJson("/events/{$event->id}", $requestData);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name']);
+            ->assertJsonValidationErrors(['name'])
+            ->assertJsonFragment([
+                'name' => ['イベント名は必須です'],
+            ]);
     }
 
     public function test_update_event_requires_category_icon(): void
@@ -146,7 +149,10 @@ class EventControllerUpdateTest extends TestCase
             ->putJson("/events/{$event->id}", $requestData);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['categoryIcon']);
+            ->assertJsonValidationErrors(['categoryIcon'])
+            ->assertJsonFragment([
+                'categoryIcon' => ['カテゴリーアイコンは必須です'],
+            ]);
     }
 
     public function test_update_event_validates_name_length(): void
@@ -163,7 +169,10 @@ class EventControllerUpdateTest extends TestCase
             ->putJson("/events/{$event->id}", $requestData);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name']);
+            ->assertJsonValidationErrors(['name'])
+            ->assertJsonFragment([
+                'name' => ['イベント名は100文字以内で入力してください'],
+            ]);
     }
 
     public function test_update_event_validates_name_not_only_whitespace(): void
@@ -180,7 +189,10 @@ class EventControllerUpdateTest extends TestCase
             ->putJson("/events/{$event->id}", $requestData);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name']);
+            ->assertJsonValidationErrors(['name'])
+            ->assertJsonFragment([
+                'name' => ['イベント名は必須です'],
+            ]);
     }
 
     public function test_update_event_validates_category_icon(): void
@@ -197,7 +209,10 @@ class EventControllerUpdateTest extends TestCase
             ->putJson("/events/{$event->id}", $requestData);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['categoryIcon']);
+            ->assertJsonValidationErrors(['categoryIcon'])
+            ->assertJsonFragment([
+                'categoryIcon' => ['無効なカテゴリーアイコンです'],
+            ]);
     }
 
     public function test_update_event_requires_authentication(): void

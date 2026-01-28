@@ -92,6 +92,7 @@ class EventController extends Controller
      */
     public function update(UpdateEventRequest $request, string $id): JsonResponse
     {
+        /** @var \App\Models\User $user */
         $user = $request->user();
 
         // イベントを取得（認証ユーザーのイベントのみ）
