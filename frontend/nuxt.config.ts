@@ -9,7 +9,10 @@ export default defineNuxtConfig({
     enabled: true
   },
 
-  css: ['~/assets/css/main.css'],
+  css: [
+    'modern-css-reset',
+    '~/assets/css/main.css'
+  ],
 
   routeRules: {
     '/': { prerender: true }
