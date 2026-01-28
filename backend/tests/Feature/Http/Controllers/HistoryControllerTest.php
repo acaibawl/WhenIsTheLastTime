@@ -912,7 +912,7 @@ class HistoryControllerTest extends TestCase
         $response->assertNotFound()
             ->assertJson([
                 'success' => false,
-                'message' => 'History not found',
+                'message' => '履歴が見つかりません',
             ]);
     }
 
@@ -970,5 +970,287 @@ class HistoryControllerTest extends TestCase
             $response->status() === 401 || $response->status() === 404,
             'Expected status code 401 or 404, got ' . $response->status()
         );
+    }
+
+    /**
+     * 履歴削除のテスト（正常系）
+     */
+    public function test_delete_history_successfully(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+
+        // 複数の履歴を作成（2件以上必要）
+        /** @var History $history1 */
+        $history1 = History::factory()->for($event)->create([
+            'executed_at' => now()->subDays(10),
+            'memo' => '古い履歴',
+        ]);
+
+        /** @var History $history2 */
+        $history2 = History::factory()->for($event)->create([
+            'executed_at' => now()->subDays(5),
+            'memo' => '新しい履歴',
+        ]);
+
+        $event->update(['last_executed_history_id' => $history2->id]);
+
+        // 認証してリクエスト（古い履歴を削除）
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson("/events/{$event->id}/history/{$history1->id}");
+
+        // レスポンスの検証
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'message' => '履歴を削除しました',
+            ]);
+
+        // データベースから削除されていることを確認
+        $this->assertDatabaseMissing('histories', [
+            'id' => $history1->id,
+        ]);
+
+        // 残りの履歴は存在することを確認
+        $this->assertDatabaseHas('histories', [
+            'id' => $history2->id,
+        ]);
+
+        // 最終実行履歴IDは変わらないことを確認
+        $event->refresh();
+        $this->assertEquals($history2->id, $event->last_executed_history_id);
+    }
+
+    /**
+     * 履歴削除のテスト（最新の履歴を削除した場合、lastExecutedHistoryIdが更新される）
+     */
+    public function test_delete_latest_history_updates_last_executed_history_id(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+
+        // 複数の履歴を作成
+        /** @var History $history1 */
+        $history1 = History::factory()->for($event)->create([
+            'executed_at' => now()->subDays(10),
+            'memo' => '古い履歴',
+        ]);
+
+        /** @var History $history2 */
+        $history2 = History::factory()->for($event)->create([
+            'executed_at' => now()->subDays(5),
+            'memo' => '中間の履歴',
+        ]);
+
+        /** @var History $history3 */
+        $history3 = History::factory()->for($event)->create([
+            'executed_at' => now()->subDays(1),
+            'memo' => '最新の履歴',
+        ]);
+
+        $event->update(['last_executed_history_id' => $history3->id]);
+
+        // 認証してリクエスト（最新の履歴を削除）
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson("/events/{$event->id}/history/{$history3->id}");
+
+        // レスポンスの検証
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'message' => '履歴を削除しました',
+            ]);
+
+        // 最新の履歴が削除されていることを確認
+        $this->assertDatabaseMissing('histories', [
+            'id' => $history3->id,
+        ]);
+
+        // 最終実行履歴IDが2番目に新しい履歴に更新されていることを確認
+        $event->refresh();
+        $this->assertEquals($history2->id, $event->last_executed_history_id);
+    }
+
+    /**
+     * 履歴削除のテスト（最後の1件を削除しようとした場合）
+     */
+    public function test_delete_last_history_returns_error(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+
+        // 履歴を1件だけ作成
+        /** @var History $history */
+        $history = History::factory()->for($event)->create([
+            'executed_at' => now(),
+            'memo' => '唯一の履歴',
+        ]);
+
+        $event->update(['last_executed_history_id' => $history->id]);
+
+        // 認証してリクエスト（最後の1件を削除しようとする）
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson("/events/{$event->id}/history/{$history->id}");
+
+        // レスポンスの検証
+        $response->assertStatus(400)
+            ->assertJson([
+                'success' => false,
+                'message' => '最後の履歴は削除できません。イベントには最低1件の履歴が必要です。',
+            ]);
+
+        // 履歴が削除されていないことを確認
+        $this->assertDatabaseHas('histories', [
+            'id' => $history->id,
+        ]);
+
+        // イベントの最終実行履歴IDも変わっていないことを確認
+        $event->refresh();
+        $this->assertEquals($history->id, $event->last_executed_history_id);
+    }
+
+    /**
+     * 履歴削除のテスト（存在しない履歴ID）
+     */
+    public function test_delete_non_existent_history(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+
+        // 履歴を作成
+        History::factory()->for($event)->create();
+
+        // 認証してリクエスト（存在しない履歴ID）
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson("/events/{$event->id}/history/999999999");
+
+        // レスポンスの検証
+        $this->assertTrue(
+            $response->status() === 404 || $response->status() === 500,
+            'Expected status code 404 or 500, got ' . $response->status()
+        );
+    }
+
+    /**
+     * 履歴削除のテスト（異なるイベントの履歴を削除しようとした場合）
+     */
+    public function test_delete_history_from_different_event(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを2つ作成
+        /** @var Event $event1 */
+        $event1 = Event::factory()->for($user)->create();
+        /** @var Event $event2 */
+        $event2 = Event::factory()->for($user)->create();
+
+        // それぞれに履歴を作成
+        /** @var History $history1 */
+        $history1 = History::factory()->for($event1)->create();
+        /** @var History $history2 */
+        $history2 = History::factory()->for($event2)->create();
+
+        $event1->update(['last_executed_history_id' => $history1->id]);
+        $event2->update(['last_executed_history_id' => $history2->id]);
+
+        // 認証してリクエスト（event1のパスでevent2の履歴を削除しようとする）
+        $response = $this->actingAs($user, 'api')
+            ->deleteJson("/events/{$event1->id}/history/{$history2->id}");
+
+        // レスポンスの検証
+        $response->assertNotFound()
+            ->assertJson([
+                'success' => false,
+                'message' => '履歴が見つかりません',
+            ]);
+
+        // 両方の履歴が削除されていないことを確認
+        $this->assertDatabaseHas('histories', [
+            'id' => $history1->id,
+        ]);
+        $this->assertDatabaseHas('histories', [
+            'id' => $history2->id,
+        ]);
+    }
+
+    /**
+     * 履歴削除のテスト（他のユーザーのイベントの履歴を削除しようとした場合）
+     */
+    public function test_delete_history_from_other_users_event(): void
+    {
+        // ユーザーを2人作成
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+
+        // user1のイベントと履歴を作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user1)->create();
+        /** @var History $history1 */
+        $history1 = History::factory()->for($event)->create();
+        /** @var History $history2 */
+        $history2 = History::factory()->for($event)->create();
+        $event->update(['last_executed_history_id' => $history2->id]);
+
+        // user2として認証してリクエスト（user1の履歴を削除しようとする）
+        $response = $this->actingAs($user2, 'api')
+            ->deleteJson("/events/{$event->id}/history/{$history1->id}");
+
+        // レスポンスの検証
+        $this->assertTrue(
+            $response->status() === 403 || $response->status() === 404,
+            'Expected status code 403 or 404, got ' . $response->status()
+        );
+
+        // 履歴が削除されていないことを確認
+        $this->assertDatabaseHas('histories', [
+            'id' => $history1->id,
+        ]);
+    }
+
+    /**
+     * 履歴削除のテスト（未認証）
+     */
+    public function test_delete_history_without_authentication(): void
+    {
+        // イベントと履歴を作成
+        $user = User::factory()->create();
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+        /** @var History $history1 */
+        $history1 = History::factory()->for($event)->create();
+        /** @var History $history2 */
+        $history2 = History::factory()->for($event)->create();
+        $event->update(['last_executed_history_id' => $history2->id]);
+
+        // 認証なしでリクエスト
+        $response = $this->deleteJson("/events/{$event->id}/history/{$history1->id}");
+
+        // レスポンスの検証
+        $this->assertTrue(
+            $response->status() === 401 || $response->status() === 404,
+            'Expected status code 401 or 404, got ' . $response->status()
+        );
+
+        // 履歴が削除されていないことを確認
+        $this->assertDatabaseHas('histories', [
+            'id' => $history1->id,
+        ]);
     }
 }

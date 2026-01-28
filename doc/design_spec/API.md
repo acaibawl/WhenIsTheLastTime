@@ -1019,9 +1019,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```json
 {
   "success": true,
-  "data": {
-    "message": "History deleted successfully"
-  }
+  "message": "履歴を削除しました",
+  "data": null
 }
 ```
 
@@ -1029,10 +1028,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```json
 {
   "success": false,
-  "error": {
-    "code": "LAST_HISTORY_DELETE_NOT_ALLOWED",
-    "message": "Cannot delete the last history entry. At least one history is required."
-  }
+  "message": "最後の履歴は削除できません。イベントには最低1件の履歴が必要です。",
+  "errors": null
 }
 ```
 
@@ -1040,10 +1037,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```json
 {
   "success": false,
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "History not found"
-  }
+  "message": "履歴が見つかりません",
+  "errors": null
 }
 ```
 
