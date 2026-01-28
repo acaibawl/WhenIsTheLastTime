@@ -11,6 +11,7 @@ use App\Models\History;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EventController extends Controller
 {
@@ -39,33 +40,31 @@ class EventController extends Controller
     {
         $user = $request->user();
 
+        DB::beginTransaction();
         try {
-            // トランザクション内でイベントと履歴を作成
-            $event = DB::transaction(function () use ($request, $user) {
-                // イベントを作成
-                /** @var Event $event */
-                $event = $user->events()->create([
-                    'name' => $request->input('name'),
-                    'category_icon' => $request->input('categoryIcon'),
-                ]);
+            // イベントを作成
+            /** @var Event $event */
+            $event = $user->events()->create([
+                'name' => $request->input('name'),
+                'category_icon' => $request->input('categoryIcon'),
+            ]);
 
-                // 初回履歴を作成
-                /** @var History $history */
-                $history = $event->histories()->create([
-                    'executed_at' => $request->input('executedAt'),
-                    'memo' => $request->input('memo'),
-                ]);
+            // 初回履歴を作成
+            /** @var History $firstHistory */
+            $firstHistory = $event->histories()->create([
+                'executed_at' => $request->input('executedAt'),
+                'memo' => $request->input('memo'),
+            ]);
 
-                // イベントの最終実行履歴IDを更新
-                $event->update([
-                    'last_executed_history_id' => $history->id,
-                ]);
+            // イベントの最終実行履歴IDを更新
+            $event->update([
+                'last_executed_history_id' => $firstHistory->id,
+            ]);
 
-                // リレーションをリロード
-                $event->load('lastExecutedHistory');
+            // リレーションをリロード
+            $event->load('lastExecutedHistory');
 
-                return $event;
-            });
+            DB::commit();
 
             return $this->successResponseWithMeta(
                 [
@@ -73,7 +72,13 @@ class EventController extends Controller
                 ],
                 code: 201
             );
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('イベントの作成に失敗しました: ' . $e->getMessage(), [
+                'userId' => $user->id,
+                'requestData' => $request->all(),
+            ]);
+
             return $this->errorResponse(
                 message: 'イベントの作成に失敗しました',
                 code: 500

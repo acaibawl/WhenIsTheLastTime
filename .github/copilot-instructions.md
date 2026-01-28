@@ -123,6 +123,17 @@ docker compose exec frontend npm run lint
 - Eloquent モデルには PHPDoc を適切に記述
 - API レスポンスは JSON 形式で返却
 - バリデーションは FormRequest クラスを使用
+- **データベーストランザクション**: `DB::transaction()` のクロージャー形式ではなく、`DB::beginTransaction()`、`DB::commit()`、`DB::rollBack()` を使用すること
+  ```php
+  DB::beginTransaction();
+  try {
+      // データベース操作
+      DB::commit();
+  } catch (\Throwable $e) {
+      DB::rollBack();
+      // エラーハンドリング
+  }
+  ```
 
 #### TypeScript/Vue
 - **Strict モード** を有効化
