@@ -43,7 +43,9 @@ Route::middleware('api')->group(function () {
     // Events API
     Route::middleware('auth:api')->group(function () {
         Route::get('/events', [EventController::class, 'index'])->name('events.index');
+        Route::get('/events/{id}', [EventController::class, 'show'])->name('events.show');
         Route::post('/events', [EventController::class, 'store'])->name('events.store');
         Route::put('/events/{id}', [EventController::class, 'update'])->name('events.update');
+        Route::delete('/events/{id}', [EventController::class, 'destroy'])->name('events.destroy');
     });
 });
