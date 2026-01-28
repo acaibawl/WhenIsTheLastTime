@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEventRequest;
+use App\Http\Requests\UpdateEventRequest;
 use App\Http\Resources\EventResource;
 use App\Models\Event;
 use App\Models\History;
@@ -80,8 +81,54 @@ class EventController extends Controller
             ]);
 
             return $this->errorResponse(
-                message: 'イベントの作成に失敗しました',
-                code: 500
+                'イベントの作成に失敗しました',
+                500
+            );
+        }
+    }
+
+    /**
+     * Update an existing event.
+     */
+    public function update(UpdateEventRequest $request, string $id): JsonResponse
+    {
+        $user = $request->user();
+
+        // イベントを取得（認証ユーザーのイベントのみ）
+        /** @var Event|null $event */
+        $event = $user->events()->find($id);
+
+        if (! $event) {
+            return $this->notFoundResponse('Event not found');
+        }
+
+        DB::beginTransaction();
+        try {
+            // イベントを更新
+            $event->update([
+                'name' => $request->input('name'),
+                'category_icon' => $request->input('categoryIcon'),
+            ]);
+
+            // リレーションをリロード
+            $event->load('lastExecutedHistory');
+
+            DB::commit();
+
+            return $this->successResponseWithMeta([
+                'event' => new EventResource($event),
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('イベントの更新に失敗しました: ' . $e->getMessage(), [
+                'userId' => $user->id,
+                'eventId' => $id,
+                'requestData' => $request->all(),
+            ]);
+
+            return $this->errorResponse(
+                'イベントの更新に失敗しました',
+                500
             );
         }
     }

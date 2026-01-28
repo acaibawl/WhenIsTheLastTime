@@ -118,7 +118,7 @@ docker compose exec frontend npm run lint
 
 #### PHP/Laravel
 - **PSR-12** に準拠（Laravel Pint で自動整形）
-- **PHPStan Level 5** での静的解析に合格すること
+- **PHPStan Level 7** での静的解析に合格すること
 - 型宣言を積極的に使用
 - Eloquent モデルには PHPDoc を適切に記述
 - API レスポンスは JSON 形式で返却
