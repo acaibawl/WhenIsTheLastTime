@@ -156,6 +156,18 @@ class AuthControllerTest extends TestCase
         $this->actingAs($user, 'api');
         $response = $this->getJson('/auth/me');
         $response->assertOk();
+        $response->assertJson(fn (AssertableJson $json) => $json
+            ->where('success', true)
+            ->has('data', fn (AssertableJson $data) => $data
+                ->has('user', fn (AssertableJson $userData) => $userData
+                    ->where('id', $user->id)
+                    ->where('email', $user->email)
+                    ->where('nickname', $user->nickname)
+                    ->has('createdAt')
+                    ->has('updatedAt')
+                )
+            )
+        );
     }
 
     /**
