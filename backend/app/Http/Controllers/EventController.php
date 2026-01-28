@@ -35,6 +35,29 @@ class EventController extends Controller
     }
 
     /**
+     * Get a specific event by ID.
+     */
+    public function show(Request $request, string $id): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        // イベントを取得（認証ユーザーのイベントのみ）
+        /** @var Event|null $event */
+        $event = $user->events()
+            ->with('lastExecutedHistory')
+            ->find($id);
+
+        if (! $event) {
+            return $this->notFoundResponse('Event not found');
+        }
+
+        return $this->successResponseWithMeta([
+            'event' => new EventResource($event),
+        ]);
+    }
+
+    /**
      * Create a new event with initial history.
      */
     public function store(StoreEventRequest $request): JsonResponse
