@@ -101,17 +101,18 @@ class HistoryController extends Controller
             return $this->notFoundResponse('履歴が見つかりません');
         }
 
-        // 履歴が最後の1件かチェック
-        $historyCount = $event->histories()->count();
-        if ($historyCount <= 1) {
-            return $this->errorResponse(
-                '最後の履歴は削除できません。イベントには最低1件の履歴が必要です。',
-                JsonResponse::HTTP_BAD_REQUEST
-            );
-        }
-
         DB::beginTransaction();
         try {
+            // 履歴が最後の1件かチェック
+            if ($event->histories()->count() <= 1) {
+                DB::rollBack();
+
+                return $this->errorResponse(
+                    '最後の履歴は削除できません。イベントには最低1件の履歴が必要です。',
+                    JsonResponse::HTTP_BAD_REQUEST
+                );
+            }
+
             // 履歴を削除
             $history->delete();
 
