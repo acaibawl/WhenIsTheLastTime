@@ -76,6 +76,15 @@ class VerifyCodeTest extends TestCase
             'nickname' => $nickname,
         ]);
 
+        // デフォルト設定が作成されたことを確認
+        $user = User::where('email', $email)->first();
+        $this->assertNotNull($user);
+        $this->assertNotNull($user->setting);
+        $settings = $user->setting->settings_json;
+        $this->assertArrayHasKey('export', $settings);
+        $this->assertArrayHasKey('notification', $settings);
+        $this->assertArrayHasKey('misc', $settings);
+
         // Redisからデータが削除されたことを確認
         $this->assertNull(Redis::get("registration:{$email}"));
     }
