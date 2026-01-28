@@ -43,13 +43,18 @@ Route::middleware('api')->group(function () {
 
     Route::middleware('auth:api')->group(function () {
         // Events API
-        Route::get('/events', [EventController::class, 'index'])->name('events.index');
-        Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
-        Route::post('/events', [EventController::class, 'store'])->name('events.store');
-        Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
-        Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+        Route::prefix('/events')->group(function () {
+            Route::get('/', [EventController::class, 'index'])->name('events.index');
+            Route::get('/{event}', [EventController::class, 'show'])->name('events.show');
+            Route::post('/', [EventController::class, 'store'])->name('events.store');
+            Route::put('/{event}', [EventController::class, 'update'])->name('events.update');
+            Route::delete('/{event}', [EventController::class, 'destroy'])->name('events.destroy');
 
-        // History API
-        Route::get('/events/{event}/history', [HistoryController::class, 'index'])->name('events.history.index');
+            // History API
+            Route::prefix('/{event}/history')->group(function () {
+                Route::get('/', [HistoryController::class, 'index'])->name('events.history.index');
+                Route::post('/', [HistoryController::class, 'store'])->name('events.history.store');
+            });
+        });
     });
 });
