@@ -51,5 +51,6 @@ Route::middleware('api')->group(function () {
 
         // History API
         Route::get('/events/{event}/history', [HistoryController::class, 'index'])->name('events.history.index');
+        Route::post('/events/{event}/history', [HistoryController::class, 'store'])->name('events.history.store');
     });
 });

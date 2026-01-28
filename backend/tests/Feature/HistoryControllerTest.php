@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\History;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class HistoryControllerTest extends TestCase
@@ -260,5 +261,329 @@ class HistoryControllerTest extends TestCase
             $response->status() === 401 || $response->status() === 404,
             'Expected status code 401 or 404, got ' . $response->status()
         );
+    }
+
+    /**
+     * 履歴追加のテスト（正常系・メモあり）
+     */
+    public function test_store_history_successfully_with_memo(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create([
+            'name' => 'エアコンフィルター掃除',
+            'category_icon' => 'leaf',
+        ]);
+
+        // 既存の履歴を作成
+        /** @var History $oldHistory */
+        $oldHistory = History::factory()->for($event)->create([
+            'executed_at' => now()->subDays(10),
+            'memo' => '前回の掃除',
+        ]);
+
+        $event->update(['last_executed_history_id' => $oldHistory->id]);
+
+        // 新しい履歴を追加
+        $executedAt = now()->subDays(1)->toIso8601String();
+        $response = $this->actingAs($user, 'api')
+            ->postJson("/events/{$event->id}/history", [
+                'executedAt' => $executedAt,
+                'memo' => '今回は念入りに実施しました',
+            ]);
+
+        // レスポンスの検証
+        $response->assertCreated()
+            ->assertJsonStructure([
+                'success',
+                'data' => [
+                    'history' => [
+                        'id',
+                        'eventId',
+                        'executedAt',
+                        'memo',
+                        'createdAt',
+                        'updatedAt',
+                    ],
+                ],
+                'meta' => [
+                    'timestamp',
+                ],
+            ])
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'history' => [
+                        'eventId' => $event->id,
+                        'memo' => '今回は念入りに実施しました',
+                    ],
+                ],
+            ]);
+
+        // データベースに保存されていることを確認
+        $this->assertDatabaseHas('histories', [
+            'event_id' => $event->id,
+            'memo' => '今回は念入りに実施しました',
+        ]);
+
+        // イベントの最終実行履歴が更新されていることを確認
+        $event->refresh();
+        $newHistoryId = $response->json('data.history.id');
+        $this->assertEquals($newHistoryId, $event->last_executed_history_id);
+    }
+
+    /**
+     * 履歴追加のテスト（正常系・メモなし）
+     */
+    public function test_store_history_successfully_without_memo(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+
+        // 既存の履歴を作成
+        /** @var History $oldHistory */
+        $oldHistory = History::factory()->for($event)->create([
+            'executed_at' => now()->subDays(5),
+        ]);
+
+        $event->update(['last_executed_history_id' => $oldHistory->id]);
+
+        // 新しい履歴を追加（メモなし）
+        $executedAt = now()->toIso8601String();
+        $response = $this->actingAs($user, 'api')
+            ->postJson("/events/{$event->id}/history", [
+                'executedAt' => $executedAt,
+            ]);
+
+        // レスポンスの検証
+        $response->assertCreated()
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'history' => [
+                        'eventId' => $event->id,
+                        'memo' => null,
+                    ],
+                ],
+            ]);
+
+        // データベースに保存されていることを確認
+        $this->assertDatabaseHas('histories', [
+            'event_id' => $event->id,
+            'memo' => null,
+        ]);
+    }
+
+    /**
+     * 履歴追加のテスト（バリデーションエラー）
+     */
+    #[DataProvider('validationErrorDataProvider')]
+    public function test_store_history_validation_error(array $requestBody, string $expectedErrorField): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+
+        /** @var History $history */
+        $history = History::factory()->for($event)->create();
+        $event->update(['last_executed_history_id' => $history->id]);
+
+        // リクエスト実行
+        $response = $this->actingAs($user, 'api')
+            ->postJson("/events/{$event->id}/history", $requestBody);
+
+        // レスポンスの検証
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors([$expectedErrorField]);
+    }
+
+    /**
+     * バリデーションエラーのデータプロバイダー
+     *
+     * @return array<string, array{requestBody: array<string, mixed>, expectedErrorField: string}>
+     */
+    public static function validationErrorDataProvider(): array
+    {
+        return [
+            'executedAtなし' => [
+                'requestBody' => [
+                    'memo' => '実行日時がありません',
+                ],
+                'expectedErrorField' => 'executedAt',
+            ],
+            '未来の日時' => [
+                'requestBody' => [
+                    'executedAt' => now()->addDays(1)->toIso8601String(),
+                ],
+                'expectedErrorField' => 'executedAt',
+            ],
+            '無効な日時形式' => [
+                'requestBody' => [
+                    'executedAt' => '2026-01-28 10:30:00', // ISO 8601形式ではない
+                ],
+                'expectedErrorField' => 'executedAt',
+            ],
+            'メモが長すぎる' => [
+                'requestBody' => [
+                    'executedAt' => now()->toIso8601String(),
+                    'memo' => str_repeat('あ', 501), // 501文字（最大500文字）
+                ],
+                'expectedErrorField' => 'memo',
+            ],
+        ];
+    }
+
+    /**
+     * 履歴追加のテスト（存在しないイベントID）
+     */
+    public function test_store_history_with_non_existent_event(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // 存在しないイベントIDでリクエスト
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/events/evt_nonexistent/history', [
+                'executedAt' => now()->toIso8601String(),
+            ]);
+
+        // レスポンスの検証
+        $response->assertNotFound()
+            ->assertJson([
+                'success' => false,
+                'message' => 'Resource not found',
+            ]);
+    }
+
+    /**
+     * 履歴追加のテスト（他ユーザーのイベント）
+     */
+    public function test_store_history_to_other_users_event(): void
+    {
+        // ユーザーを2人作成
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+
+        // user2のイベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user2)->create();
+
+        /** @var History $history */
+        $history = History::factory()->for($event)->create();
+        $event->update(['last_executed_history_id' => $history->id]);
+
+        // user1として認証してuser2のイベントに履歴を追加しようとする
+        $response = $this->actingAs($user1, 'api')
+            ->postJson("/events/{$event->id}/history", [
+                'executedAt' => now()->toIso8601String(),
+            ]);
+
+        // レスポンスの検証（アクセスできないはず）
+        $response->assertNotFound()
+            ->assertJson([
+                'success' => false,
+                'message' => 'Event not found',
+            ]);
+    }
+
+    /**
+     * 履歴追加のテスト（未認証）
+     */
+    public function test_store_history_without_authentication(): void
+    {
+        // イベントを作成（認証なし）
+        $user = User::factory()->create();
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+
+        // 認証なしでリクエスト
+        $response = $this->postJson("/events/{$event->id}/history", [
+            'executedAt' => now()->toIso8601String(),
+        ]);
+
+        // レスポンスの検証
+        $this->assertTrue(
+            $response->status() === 401 || $response->status() === 404,
+            'Expected status code 401 or 404, got ' . $response->status()
+        );
+    }
+
+    /**
+     * 履歴追加のテスト（最終実行履歴の自動更新）
+     */
+    public function test_store_history_updates_last_executed_history_automatically(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+
+        // 古い履歴を作成
+        /** @var History $oldHistory */
+        $oldHistory = History::factory()->for($event)->create([
+            'executed_at' => now()->subDays(10),
+        ]);
+
+        $event->update(['last_executed_history_id' => $oldHistory->id]);
+
+        // 新しい履歴を追加（より最近の日時）
+        $response = $this->actingAs($user, 'api')
+            ->postJson("/events/{$event->id}/history", [
+                'executedAt' => now()->subDays(1)->toIso8601String(),
+            ]);
+
+        $response->assertCreated();
+
+        // イベントの最終実行履歴が新しい履歴に更新されていることを確認
+        $event->refresh();
+        $newHistoryId = $response->json('data.history.id');
+        $this->assertEquals($newHistoryId, $event->last_executed_history_id);
+        $this->assertNotEquals($oldHistory->id, $event->last_executed_history_id);
+    }
+
+    /**
+     * 履歴追加のテスト（過去の履歴を追加しても最終実行履歴は最新のまま）
+     */
+    public function test_store_history_with_older_date_keeps_latest_as_last_executed(): void
+    {
+        // ユーザーを作成
+        $user = User::factory()->create();
+
+        // イベントを作成
+        /** @var Event $event */
+        $event = Event::factory()->for($user)->create();
+
+        // 最新の履歴を作成
+        /** @var History $latestHistory */
+        $latestHistory = History::factory()->for($event)->create([
+            'executed_at' => now()->subDays(1),
+        ]);
+
+        $event->update(['last_executed_history_id' => $latestHistory->id]);
+
+        // より古い日時の履歴を追加
+        $response = $this->actingAs($user, 'api')
+            ->postJson("/events/{$event->id}/history", [
+                'executedAt' => now()->subDays(10)->toIso8601String(),
+                'memo' => '過去の記録を追加',
+            ]);
+
+        $response->assertCreated();
+
+        // イベントの最終実行履歴は最新のまま（latestHistory）であることを確認
+        $event->refresh();
+        $this->assertEquals($latestHistory->id, $event->last_executed_history_id);
     }
 }
