@@ -44,6 +44,8 @@ services:
       - ./frontend:/app
     ports:
       - "3000:3000"
+    # プロジェクトセットアップ時にnpm installのため、コンテナを起動したままにする（一時的にtailコマンド使用）
+    # command: tail -f /dev/null
     networks:
       - witlt_network
 
