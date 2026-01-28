@@ -12,6 +12,7 @@ use App\Http\Requests\Auth\VerifyCodePost;
 use App\Mail\Auth\RegistrationAttemptNotification;
 use App\Mail\Auth\VerificationCodeMail;
 use App\Models\User;
+use App\Models\UserSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -178,6 +179,12 @@ class AuthController extends Controller
             'email' => $registrationData['email'],
             'password_hash' => $registrationData['passwordHash'],
             'nickname' => $registrationData['nickname'],
+        ]);
+
+        // 5-1. デフォルト設定を作成
+        UserSetting::create([
+            'user_id' => $user->id,
+            'settings_json' => UserSetting::getDefaultSettings(),
         ]);
 
         // 6. Redis削除

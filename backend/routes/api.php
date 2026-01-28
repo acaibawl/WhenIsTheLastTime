@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -58,5 +59,8 @@ Route::middleware('api')->group(function () {
                 Route::delete('/{history}', [HistoryController::class, 'destroy'])->name('events.history.destroy');
             });
         });
+
+        // Settings API
+        Route::get('/settings', [SettingController::class, 'show'])->name('settings.show');
     });
 });
