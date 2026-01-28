@@ -156,4 +156,44 @@ class EventController extends Controller
             );
         }
     }
+
+    /**
+     * Delete an event and all its histories.
+     */
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        // イベントを取得（認証ユーザーのイベントのみ）
+        /** @var Event|null $event */
+        $event = $user->events()->find($id);
+
+        if (! $event) {
+            return $this->notFoundResponse('Event not found');
+        }
+
+        DB::beginTransaction();
+        try {
+            // イベントを削除（カスケードで履歴も削除される）
+            $event->delete();
+
+            DB::commit();
+
+            return $this->successResponseWithMeta([
+                'message' => 'Event and all histories deleted successfully',
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('イベントの削除に失敗しました: ' . $e->getMessage(), [
+                'userId' => $user->id,
+                'eventId' => $id,
+            ]);
+
+            return $this->errorResponse(
+                'イベントの削除に失敗しました',
+                500
+            );
+        }
+    }
 }
