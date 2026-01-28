@@ -90,10 +90,9 @@ jobs:
           # php artisan db:seed --env=testing
         working-directory: ./backend
 
-      - name: Cache route
+      - name: Clear cache before testing
         run: |
           php artisan optimize:clear --env=testing
-          php artisan route:cache --env=testing
         working-directory: ./backend
 
       - name: Run unit test(php artisan test)

@@ -37,20 +37,18 @@ class EventController extends Controller
     /**
      * Get a specific event by ID.
      */
-    public function show(Request $request, string $id): JsonResponse
+    public function show(Request $request, Event $event): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        // イベントを取得（認証ユーザーのイベントのみ）
-        /** @var Event|null $event */
-        $event = $user->events()
-            ->with('lastExecutedHistory')
-            ->find($id);
-
-        if (! $event) {
+        // 認証ユーザーのイベントかチェック
+        if ($event->user_id !== $user->id) {
             return $this->notFoundResponse('Event not found');
         }
+
+        // リレーションをロード
+        $event->load('lastExecutedHistory');
 
         return $this->successResponseWithMeta([
             'event' => new EventResource($event),
@@ -113,16 +111,13 @@ class EventController extends Controller
     /**
      * Update an existing event.
      */
-    public function update(UpdateEventRequest $request, string $id): JsonResponse
+    public function update(UpdateEventRequest $request, Event $event): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        // イベントを取得（認証ユーザーのイベントのみ）
-        /** @var Event|null $event */
-        $event = $user->events()->find($id);
-
-        if (! $event) {
+        // 認証ユーザーのイベントかチェック
+        if ($event->user_id !== $user->id) {
             return $this->notFoundResponse('Event not found');
         }
 
@@ -146,7 +141,7 @@ class EventController extends Controller
             DB::rollBack();
             Log::error('イベントの更新に失敗しました: ' . $e->getMessage(), [
                 'userId' => $user->id,
-                'eventId' => $id,
+                'eventId' => $event->id,
                 'requestData' => $request->all(),
             ]);
 
@@ -160,16 +155,13 @@ class EventController extends Controller
     /**
      * Delete an event and all its histories.
      */
-    public function destroy(Request $request, string $id): JsonResponse
+    public function destroy(Request $request, Event $event): JsonResponse
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        // イベントを取得（認証ユーザーのイベントのみ）
-        /** @var Event|null $event */
-        $event = $user->events()->find($id);
-
-        if (! $event) {
+        // 認証ユーザーのイベントかチェック
+        if ($event->user_id !== $user->id) {
             return $this->notFoundResponse('Event not found');
         }
 
@@ -187,7 +179,7 @@ class EventController extends Controller
             DB::rollBack();
             Log::error('イベントの削除に失敗しました: ' . $e->getMessage(), [
                 'userId' => $user->id,
-                'eventId' => $id,
+                'eventId' => $event->id,
             ]);
 
             return $this->errorResponse(
