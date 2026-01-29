@@ -121,7 +121,7 @@
 <script setup lang="ts">
 // ページメタデータ（認証ミドルウェアを適用）
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'auth',
 });
 
 // 型定義
@@ -148,8 +148,8 @@ const filteredEvents = computed(() => {
 
   const query = searchQuery.value.toLowerCase();
   return events.value.filter(event =>
-    event.name.toLowerCase().includes(query) ||
-    (event.last_memo && event.last_memo.toLowerCase().includes(query))
+    event.name.toLowerCase().includes(query)
+    || (event.last_memo && event.last_memo.toLowerCase().includes(query)),
   );
 });
 
@@ -177,8 +177,8 @@ const fetchEvents = async () => {
     const response = await $fetch<any>('/events', {
       baseURL: config.public.apiBaseUrl,
       headers: {
-        Authorization: `Bearer ${token.value}`
-      }
+        Authorization: `Bearer ${token.value}`,
+      },
     });
 
     if (response.success) {
@@ -234,12 +234,10 @@ const formatDate = (dateStr: string | null): string => {
 
 const navigateToHistory = (eventId: number) => {
   // TODO: イベント履歴画面への遷移（未実装）
-  console.log('Navigate to event history:', eventId);
 };
 
 const navigateToCreate = () => {
   // TODO: イベント作成画面への遷移（未実装）
-  console.log('Navigate to create event');
 };
 
 // ライフサイクルフック
@@ -251,8 +249,8 @@ onMounted(async () => {
     const response = await $fetch<any>('/auth/me', {
       baseURL: config.public.apiBaseUrl,
       headers: {
-        Authorization: `Bearer ${token.value}`
-      }
+        Authorization: `Bearer ${token.value}`,
+      },
     });
 
     if (response.success && response.data.user) {
