@@ -43,7 +43,7 @@ if (!nickname.value) {
       <!-- はじめるボタン -->
       <div class="mt-8">
         <ULink
-          to="/"
+          to="/login"
           as="button"
           class="inline-flex items-center justify-center px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold text-lg rounded-lg shadow-lg hover:shadow-xl transition-all"
         >
