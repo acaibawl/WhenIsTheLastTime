@@ -20,9 +20,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/health', [HealthController::class, 'checkHealth']);
-
 Route::middleware('api')->group(function () {
+    Route::get('/health', [HealthController::class, 'checkHealth']);
+
     Route::prefix('auth')
         ->name('auth.')
         ->group(function () {
