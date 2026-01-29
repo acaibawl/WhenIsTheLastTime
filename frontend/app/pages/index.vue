@@ -1,7 +1,13 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- ヘッダー -->
-    <header class="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+  <div>
+    <!-- イベント作成モーダル（Teleportで body に配置） -->
+    <Teleport to="body">
+      <CreateEventModal v-if="showCreateModal" v-model="showCreateModal" @created="handleEventCreated" />
+    </Teleport>
+
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <!-- ヘッダー -->
+      <header class="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="container mx-auto px-4 py-3 flex items-center justify-between">
         <!-- ハンバーガーメニュー（将来実装） -->
         <button class="p-2 text-gray-600 dark:text-gray-300">
@@ -86,7 +92,7 @@
         >
           <!-- イベント名 -->
           <div class="flex items-start gap-3 mb-2">
-            <span class="text-2xl">{{ event.icon || '📌' }}</span>
+            <span class="text-2xl">{{ getCategoryIcon(event.categoryIcon) }}</span>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex-1 line-clamp-2">
               {{ event.name }}
             </h3>
@@ -99,10 +105,10 @@
 
           <!-- サブ情報 -->
           <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-            <p v-if="event.last_memo" class="line-clamp-1">
-              メモ: {{ event.last_memo }}
+            <p v-if="event.lastExecutedMemo" class="line-clamp-1">
+              メモ: {{ event.lastExecutedMemo }}
             </p>
-            <p>{{ formatDate(event.last_executed_at) }}</p>
+            <p>{{ formatDate(event.lastExecutedAt) }}</p>
           </div>
         </div>
       </div>
@@ -111,15 +117,18 @@
     <!-- FAB（追加ボタン） -->
     <button
       class="fixed bottom-6 right-6 w-14 h-14 md:w-16 md:h-16 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
-      @click="navigateToCreate"
+      aria-label="新しいイベントを作成"
+      @click="openCreateModal"
     >
       <UIcon name="i-lucide-plus" class="w-6 h-6 md:w-8 md:h-8" />
     </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { intervalToDuration } from 'date-fns';
+import CreateEventModal from '~/components/EventForm/CreateEventModal.vue';
 
 // ページメタデータ（認証ミドルウェアを適用）
 definePageMeta({
@@ -127,14 +136,50 @@ definePageMeta({
 });
 
 // 型定義
+type CategoryType
+  = | 'pin'
+    | 'book'
+    | 'folder'
+    | 'star'
+    | 'chart'
+    | 'sun'
+    | 'person'
+    | 'hospital'
+    | 'medical'
+    | 'leaf'
+    | 'search'
+    | 'people'
+    | 'snowflake'
+    | 'fire'
+    | 'lightning';
+
 interface Event {
   id: number;
   name: string;
-  icon: string | null;
-  last_executed_at: string | null;
-  last_memo: string | null;
+  categoryIcon: CategoryType;
+  lastExecutedAt: string | null;
+  lastExecutedMemo: string | null;
   elapsed_days: number;
 }
+
+// カテゴリーアイコンマッピング
+const CATEGORY_ICON_MAP: Record<CategoryType, string> = {
+  pin: '📌',
+  book: '📚',
+  folder: '📁',
+  star: '⭐',
+  chart: '📊',
+  sun: '☀️',
+  person: '👤',
+  hospital: '🏥',
+  medical: '➕',
+  leaf: '🍃',
+  search: '🔍',
+  people: '👥',
+  snowflake: '❄️',
+  fire: '🔥',
+  lightning: '⚡',
+};
 
 // リアクティブステート
 const loading = ref(true);
@@ -143,6 +188,7 @@ const events = ref<Event[]>([]);
 const searchQuery = ref('');
 const showSearch = ref(false);
 const userNickname = ref('');
+const showCreateModal = ref(false);
 
 // 計算プロパティ
 const filteredEvents = computed(() => {
@@ -151,11 +197,15 @@ const filteredEvents = computed(() => {
   const query = searchQuery.value.toLowerCase();
   return events.value.filter(event =>
     event.name.toLowerCase().includes(query)
-    || (event.last_memo && event.last_memo.toLowerCase().includes(query)),
+    || (event.lastExecutedMemo && event.lastExecutedMemo.toLowerCase().includes(query)),
   );
 });
 
 // メソッド
+const getCategoryIcon = (categoryIcon: CategoryType): string => {
+  return CATEGORY_ICON_MAP[categoryIcon] || '📌';
+};
+
 const toggleSearch = () => {
   showSearch.value = !showSearch.value;
   if (!showSearch.value) {
@@ -260,8 +310,13 @@ const navigateToHistory = () => {
   // TODO: イベント履歴画面への遷移（未実装）
 };
 
-const navigateToCreate = () => {
-  // TODO: イベント作成画面への遷移（未実装）
+const openCreateModal = () => {
+  showCreateModal.value = true;
+};
+
+const handleEventCreated = async () => {
+  // イベント作成後、一覧を再取得
+  await fetchEvents();
 };
 
 // ライフサイクルフック
