@@ -51,11 +51,11 @@ const { handleSubmit, errors, setErrors, defineField } = useForm({
   },
 });
 
-// フィールド定義
-const [email] = defineField('email');
-const [password] = defineField('password');
-const [passwordConfirmation] = defineField('passwordConfirmation');
-const [nickname] = defineField('nickname');
+// フィールド定義（リアルタイムバリデーション有効化）
+const [email] = defineField('email', { validateOnModelUpdate: true });
+const [password] = defineField('password', { validateOnModelUpdate: true });
+const [passwordConfirmation] = defineField('passwordConfirmation', { validateOnModelUpdate: true });
+const [nickname] = defineField('nickname', { validateOnModelUpdate: true });
 
 // フォーム送信
 const onSubmit = handleSubmit(async (values) => {
@@ -139,14 +139,14 @@ const onSubmit = handleSubmit(async (values) => {
       <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
         <form @submit="onSubmit" class="space-y-6">
           <!-- 全体エラーメッセージ -->
-          <UAlert
+            <UAlert
             v-if="generalError"
-            color="error"
-            variant="soft"
-            :title="generalError"
-            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'red', variant: 'link' }"
-            @close="generalError = ''"
-          />
+              color="error"
+              variant="soft"
+              :title="generalError"
+              :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'red', variant: 'link' }"
+              @close="generalError = ''"
+            />
 
           <!-- メールアドレス -->
           <div>
@@ -162,8 +162,8 @@ const onSubmit = handleSubmit(async (values) => {
               :disabled="isLoading"
             />
             <p v-if="errors.email" class="mt-2 text-sm text-red-600">
-              {{ errors.email }}
-            </p>
+                {{ errors.email }}
+              </p>
           </div>
 
           <!-- パスワード -->
@@ -191,8 +191,8 @@ const onSubmit = handleSubmit(async (values) => {
             </UInput>
             <p class="mt-1 text-sm text-gray-500">※8文字以上、英数字を含む</p>
             <p v-if="errors.password" class="mt-2 text-sm text-red-600">
-              {{ errors.password }}
-            </p>
+                {{ errors.password }}
+              </p>
           </div>
 
           <!-- パスワード（確認） -->
@@ -219,8 +219,8 @@ const onSubmit = handleSubmit(async (values) => {
               </template>
             </UInput>
             <p v-if="errors.passwordConfirmation" class="mt-2 text-sm text-red-600">
-              {{ errors.passwordConfirmation }}
-            </p>
+                {{ errors.passwordConfirmation }}
+              </p>
           </div>
 
           <!-- ニックネーム -->
@@ -238,7 +238,7 @@ const onSubmit = handleSubmit(async (values) => {
             />
             <p class="mt-1 text-sm text-gray-500">※1〜10文字</p>
             <p v-if="errors.nickname" class="mt-2 text-sm text-red-600">
-              {{ errors.nickname }}
+                {{ errors.nickname }}
             </p>
           </div>
 
