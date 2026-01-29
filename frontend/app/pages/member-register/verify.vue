@@ -22,8 +22,11 @@ if (!email.value) {
   await navigateTo('/register');
 }
 
-// 認証コード（6桁の配列）
-const code = ref(['', '', '', '', '', '']);
+// 認証コード（6桁の数字配列）
+const code = ref<number[]>([]);
+
+// PinInput コンポーネントへの参照
+const pinInputRef = ref();
 
 // エラーメッセージ
 const errorMessage = ref('');
@@ -53,10 +56,9 @@ onMounted(() => {
     }
   }, 1000);
 
-  // 最初の入力欄にフォーカス
+  // 認証コード入力欄にフォーカス
   nextTick(() => {
-    const firstInput = document.querySelector<HTMLInputElement>('input[data-code-index="0"]');
-    firstInput?.focus();
+    pinInputRef.value?.$el?.querySelector('input')?.focus();
   });
 });
 
@@ -72,69 +74,12 @@ const expiresDisplay = computed(() => {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 });
 
-// コード入力処理
-const onCodeInput = (index: number, event: Event) => {
-  const input = event.target as HTMLInputElement;
-  const value = input.value;
+// 6桁入力完了時の処理
+const onComplete = () => {
+  // コードの値を文字列に変換
+  const codeValue = code.value.join('');
 
-  // 数字のみ許可
-  if (value && !/^\d$/.test(value)) {
-    input.value = '';
-    return;
-  }
-
-  code.value[index] = value;
-
-  // 入力があれば次の入力欄に移動
-  if (value && index < 5) {
-    const nextInput = document.querySelector<HTMLInputElement>(`input[data-code-index="${index + 1}"]`);
-    nextInput?.focus();
-  }
-
-  // 6桁すべて入力されたら自動送信
-  if (code.value.every(c => c !== '')) {
-    onSubmit();
-  }
-};
-
-// キー操作処理
-const onKeyDown = (index: number, event: KeyboardEvent) => {
-  // Backspace: 現在の入力欄が空なら前の入力欄に移動
-  if (event.key === 'Backspace' && !code.value[index] && index > 0) {
-    const prevInput = document.querySelector<HTMLInputElement>(`input[data-code-index="${index - 1}"]`);
-    prevInput?.focus();
-  }
-  // 左矢印キー: 前の入力欄に移動
-  else if (event.key === 'ArrowLeft' && index > 0) {
-    const prevInput = document.querySelector<HTMLInputElement>(`input[data-code-index="${index - 1}"]`);
-    prevInput?.focus();
-  }
-  // 右矢印キー: 次の入力欄に移動
-  else if (event.key === 'ArrowRight' && index < 5) {
-    const nextInput = document.querySelector<HTMLInputElement>(`input[data-code-index="${index + 1}"]`);
-    nextInput?.focus();
-  }
-};
-
-// ペースト処理
-const onPaste = (event: ClipboardEvent) => {
-  event.preventDefault();
-  const pastedData = event.clipboardData?.getData('text') || '';
-  const digits = pastedData.replace(/\D/g, '').slice(0, 6).split('');
-
-  digits.forEach((digit, index) => {
-    if (index < 6) {
-      code.value[index] = digit;
-    }
-  });
-
-  // 最後の入力欄にフォーカス
-  const lastIndex = Math.min(digits.length, 5);
-  const lastInput = document.querySelector<HTMLInputElement>(`input[data-code-index="${lastIndex}"]`);
-  lastInput?.focus();
-
-  // 6桁すべて入力されたら自動送信
-  if (code.value.every(c => c !== '')) {
+  if (codeValue.length === 6 && /^\d{6}$/.test(codeValue)) {
     onSubmit();
   }
 };
@@ -143,8 +88,11 @@ const onPaste = (event: ClipboardEvent) => {
 const onSubmit = async () => {
   errorMessage.value = '';
 
+  // コードの値を文字列に変換
+  const codeValue = code.value.join('');
+
   // 6桁すべて入力されているか確認
-  if (code.value.some(c => c === '')) {
+  if (codeValue.length !== 6 || !/^\d{6}$/.test(codeValue)) {
     errorMessage.value = '6桁の数字を入力してください';
     return;
   }
@@ -159,7 +107,7 @@ const onSubmit = async () => {
       baseURL: config.public.apiBaseUrl,
       body: {
         email: email.value,
-        code: code.value.join(''),
+        code: codeValue,
       },
     });
 
@@ -194,9 +142,7 @@ const onSubmit = async () => {
     }
 
     // エラー時はコードをクリア
-    code.value = ['', '', '', '', '', ''];
-    const firstInput = document.querySelector<HTMLInputElement>('input[data-code-index="0"]');
-    firstInput?.focus();
+    code.value = [];
   } finally {
     isLoading.value = false;
   }
@@ -225,7 +171,7 @@ const onResend = async () => {
     expiresAt.value = new Date(Date.now() + 600000);
 
     // コードをクリア
-    code.value = ['', '', '', '', '', ''];
+    code.value = [];
 
     // 再送信クールダウンを開始
     resendCooldown.value = 60;
@@ -242,10 +188,9 @@ const onResend = async () => {
       color: 'info',
     });
 
-    // 最初の入力欄にフォーカス
+    // 認証コード入力欄にフォーカス
     nextTick(() => {
-      const firstInput = document.querySelector<HTMLInputElement>('input[data-code-index="0"]');
-      firstInput?.focus();
+      pinInputRef.value?.$el?.querySelector('input')?.focus();
     });
   } catch (error: any) {
     console.error('Resend error:', error);
@@ -277,7 +222,7 @@ const onResend = async () => {
 
 // 戻るボタン
 const onBack = () => {
-  navigateTo('/register');
+  navigateTo('/member-register');
 };
 </script>
 
@@ -285,14 +230,14 @@ const onBack = () => {
   <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <!-- 戻るボタン -->
-      <button
-        type="button"
+      <ULink
+        to="/member-register"
+        as="button"
         class="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
-        @click="onBack"
       >
         <UIcon name="i-heroicons-arrow-left" class="mr-2" />
         戻る
-      </button>
+      </ULink>
 
       <!-- アイコンとタイトル -->
       <div class="text-center">
@@ -325,21 +270,18 @@ const onBack = () => {
         <form @submit.prevent="onSubmit" class="space-y-6">
           <!-- 認証コード入力 -->
           <div>
-            <div class="flex justify-center gap-2 mb-4">
-              <input
-                v-for="(digit, index) in code"
-                :key="index"
-                v-model="code[index]"
-                type="text"
-                inputmode="numeric"
-                maxlength="1"
-                :data-code-index="index"
-                class="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:outline-none transition-colors"
+            <div class="flex justify-center mb-4">
+              <UPinInput
+                ref="pinInputRef"
+                v-model="code"
+                :length="6"
+                placeholder="0"
+                type="number"
                 :disabled="isLoading || expiresIn === 0"
-                @input="onCodeInput(index, $event)"
-                @keydown="onKeyDown(index, $event)"
-                @paste="onPaste"
-              >
+                size="xl"
+                @complete="onComplete"
+                otp
+              />
             </div>
 
             <!-- 有効期限表示 -->
@@ -360,7 +302,7 @@ const onBack = () => {
               block
               size="lg"
               :loading="isLoading"
-              :disabled="isLoading || code.some(c => c === '') || expiresIn === 0"
+              :disabled="isLoading || code.values.length !== 6 || expiresIn === 0"
             >
               確認する
             </UButton>
