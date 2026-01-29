@@ -16,7 +16,10 @@
     "@iconify-json/simple-icons": "^1.2.63",
     "@nuxt/ui": "^4.3.0",
     "modern-css-reset": "^1.4.0",
-    "nuxt": "^4.2.2"
+    "nuxt": "^4.2.2",
+    "vee-validate": "^4.15.1",
+    "yup": "^1.7.1",
+    "yup-locale-ja": "^1.0.0"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.12.1",
