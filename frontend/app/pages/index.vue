@@ -99,8 +99,8 @@
           </div>
 
           <!-- 経過時間 -->
-          <div :class="['text-2xl font-bold mb-2', getElapsedTimeColor(event.elapsed_days)]">
-            {{ formatElapsedTime(event.elapsed_days) }}
+          <div :class="['text-2xl font-bold mb-2', getElapsedTimeColor(event.lastExecutedAt)]">
+            {{ formatElapsedTime(event.lastExecutedAt) }}
           </div>
 
           <!-- サブ情報 -->
@@ -127,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { intervalToDuration } from 'date-fns';
+import { differenceInDays, intervalToDuration } from 'date-fns';
 import type { CategoryType } from '~/constants/categories';
 import { getCategoryIcon } from '~/constants/categories';
 import CreateEventModal from '~/components/EventForm/CreateEventModal.vue';
@@ -143,7 +143,6 @@ interface Event {
   categoryIcon: CategoryType;
   lastExecutedAt: string | null;
   lastExecutedMemo: string | null;
-  elapsed_days: number;
 }
 
 // リアクティブステート
@@ -215,16 +214,19 @@ const fetchEvents = async () => {
   }
 };
 
-const formatElapsedTime = (days: number): string => {
-  if (days === null || days === undefined) return '記録なし';
+const calculateElapsedDays = (lastExecutedAt: string | null): number | null => {
+  if (!lastExecutedAt) return null;
+  return differenceInDays(new Date(), new Date(lastExecutedAt));
+};
 
-  // 日数から実際のカレンダーに基づいた期間を計算
-  // 現在日時から指定日数前の日付を計算し、その間の期間を取得
+const formatElapsedTime = (lastExecutedAt: string | null): string => {
+  if (!lastExecutedAt) return '記録なし';
+
+  const lastDate = new Date(lastExecutedAt);
   const now = new Date();
-  const pastDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
   const duration = intervalToDuration({
-    start: pastDate,
+    start: lastDate,
     end: now,
   });
 
@@ -235,7 +237,7 @@ const formatElapsedTime = (days: number): string => {
   if (duration.days) parts.push(`${duration.days}日`);
 
   // 全てが0の場合（当日）
-  if (parts.length === 0) return '今日';
+  if (parts.length === 0) return '0日';
 
   return parts.join(' ');
 };
@@ -246,8 +248,9 @@ const ELAPSED_TIME_THRESHOLDS = {
   YEAR: 365,
 } as const;
 
-const getElapsedTimeColor = (days: number): string => {
-  if (days === null || days === undefined) return 'text-gray-500';
+const getElapsedTimeColor = (lastExecutedAt: string | null): string => {
+  const days = calculateElapsedDays(lastExecutedAt);
+  if (days === null) return 'text-gray-500';
   if (days <= ELAPSED_TIME_THRESHOLDS.WEEK) return 'text-green-600 dark:text-green-400';
   if (days <= ELAPSED_TIME_THRESHOLDS.MONTH) return 'text-yellow-600 dark:text-yellow-400';
   if (days <= ELAPSED_TIME_THRESHOLDS.YEAR) return 'text-orange-600 dark:text-orange-400';
