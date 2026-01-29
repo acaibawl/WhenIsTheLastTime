@@ -6,17 +6,12 @@ useHead({
 
 // クエリパラメータからニックネームを取得
 const route = useRoute();
-const nickname = ref(route.query.nickname as string || 'ゲスト');
+const nickname = ref(route.query.nickname as string);
 
 // ニックネームがない場合は登録画面にリダイレクト
-if (!nickname.value || nickname.value === 'ゲスト') {
-  await navigateTo('/register');
+if (!nickname.value) {
+  await navigateTo('/member-register');
 }
-
-// 手動でメイン画面に遷移
-const onStart = () => {
-  navigateTo('/');
-};
 </script>
 
 <template>
@@ -47,12 +42,13 @@ const onStart = () => {
 
       <!-- はじめるボタン -->
       <div class="mt-8">
-        <UButton
-          size="xl"
-          @click="onStart"
+        <ULink
+          to="/"
+          as="button"
+          class="inline-flex items-center justify-center px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold text-lg rounded-lg shadow-lg hover:shadow-xl transition-all"
         >
           はじめる
-        </UButton>
+        </ULink>
       </div>
     </div>
   </div>
