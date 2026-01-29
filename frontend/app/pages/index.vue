@@ -82,7 +82,7 @@
           v-for="event in filteredEvents"
           :key="event.id"
           class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] transition-transform"
-          @click="navigateToHistory(event.id)"
+          @click="navigateToHistory"
         >
           <!-- イベント名 -->
           <div class="flex items-start gap-3 mb-2">
@@ -119,6 +119,8 @@
 </template>
 
 <script setup lang="ts">
+import { intervalToDuration } from 'date-fns';
+
 // ページメタデータ（認証ミドルウェアを適用）
 definePageMeta({
   middleware: 'auth',
@@ -140,7 +142,7 @@ const error = ref<string | null>(null);
 const events = ref<Event[]>([]);
 const searchQuery = ref('');
 const showSearch = ref(false);
-const userNickname = ref('ゲスト');
+const userNickname = ref('');
 
 // 計算プロパティ
 const filteredEvents = computed(() => {
@@ -168,9 +170,9 @@ const clearSearch = () => {
 const fetchEvents = async () => {
   loading.value = true;
   error.value = null;
+  const token = useCookie('access_token');
 
   try {
-    const token = useCookie('access_token');
     const config = useRuntimeConfig();
 
     // イベント一覧取得
@@ -191,7 +193,6 @@ const fetchEvents = async () => {
 
     // 401エラーの場合はログイン画面へ
     if (err.status === 401 || err.statusCode === 401) {
-      const token = useCookie('access_token');
       token.value = null;
       await navigateTo('/login');
       return;
@@ -206,33 +207,56 @@ const fetchEvents = async () => {
 const formatElapsedTime = (days: number): string => {
   if (days === null || days === undefined) return '記録なし';
 
-  const years = Math.floor(days / 365);
-  const months = Math.floor((days % 365) / 30);
-  const remainingDays = days % 30;
+  // 日数から実際のカレンダーに基づいた期間を計算
+  // 現在日時から指定日数前の日付を計算し、その間の期間を取得
+  const now = new Date();
+  const pastDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
-  return `${years}年 ${months}ヶ月 ${remainingDays}日`;
+  const duration = intervalToDuration({
+    start: pastDate,
+    end: now,
+  });
+
+  // 年・月・日の形式でフォーマット
+  const parts: string[] = [];
+  if (duration.years) parts.push(`${duration.years}年`);
+  if (duration.months) parts.push(`${duration.months}ヶ月`);
+  if (duration.days) parts.push(`${duration.days}日`);
+
+  // 全てが0の場合（当日）
+  if (parts.length === 0) return '今日';
+
+  return parts.join(' ');
 };
+
+const ELAPSED_TIME_THRESHOLDS = {
+  WEEK: 7,
+  MONTH: 30,
+  YEAR: 365,
+} as const;
 
 const getElapsedTimeColor = (days: number): string => {
   if (days === null || days === undefined) return 'text-gray-500';
-  if (days <= 7) return 'text-green-600 dark:text-green-400';
-  if (days <= 30) return 'text-yellow-600 dark:text-yellow-400';
-  if (days <= 365) return 'text-orange-600 dark:text-orange-400';
+  if (days <= ELAPSED_TIME_THRESHOLDS.WEEK) return 'text-green-600 dark:text-green-400';
+  if (days <= ELAPSED_TIME_THRESHOLDS.MONTH) return 'text-yellow-600 dark:text-yellow-400';
+  if (days <= ELAPSED_TIME_THRESHOLDS.YEAR) return 'text-orange-600 dark:text-orange-400';
   return 'text-red-600 dark:text-red-400';
 };
 
 const formatDate = (dateStr: string | null): string => {
   if (!dateStr) return '実行履歴なし';
-
-  const date = new Date(dateStr);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}/${month}/${day}`;
+  try {
+    return new Intl.DateTimeFormat('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date(dateStr));
+  } catch {
+    return '無効な日付';
+  }
 };
 
-const navigateToHistory = (eventId: number) => {
+const navigateToHistory = () => {
   // TODO: イベント履歴画面への遷移（未実装）
 };
 
@@ -241,26 +265,29 @@ const navigateToCreate = () => {
 };
 
 // ライフサイクルフック
-onMounted(async () => {
-  // ユーザー情報の取得（簡易実装）
-  try {
-    const token = useCookie('access_token');
-    const config = useRuntimeConfig();
-    const response = await $fetch<any>('/auth/me', {
-      baseURL: config.public.apiBaseUrl,
-      headers: {
-        Authorization: `Bearer ${token.value}`,
-      },
-    });
+onBeforeMount(async () => {
+  const fetchUserInfo = async () => {
+    try {
+      const token = useCookie('access_token');
+      const config = useRuntimeConfig();
+      const response = await $fetch<any>('/auth/me', {
+        baseURL: config.public.apiBaseUrl,
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+      });
 
-    if (response.success && response.data.user) {
-      userNickname.value = response.data.user.nickname || 'ゲスト';
+      if (response.success && response.data.user) {
+        userNickname.value = response.data.user.nickname;
+      }
+    } catch (err) {
+      console.error('Failed to fetch user info:', err);
     }
-  } catch (err) {
-    console.error('Failed to fetch user info:', err);
-  }
+  };
 
-  // イベント一覧取得
-  await fetchEvents();
+  await Promise.all([
+    fetchUserInfo(),
+    fetchEvents(),
+  ]);
 });
 </script>
