@@ -219,11 +219,6 @@ const onResend = async () => {
     isLoading.value = false;
   }
 };
-
-// 戻るボタン
-const onBack = () => {
-  navigateTo('/member-register');
-};
 </script>
 
 <template>
@@ -267,7 +262,7 @@ const onBack = () => {
           @close="errorMessage = ''"
         />
 
-        <form @submit.prevent="onSubmit" class="space-y-6">
+        <form class="space-y-6" @submit.prevent="onSubmit">
           <!-- 認証コード入力 -->
           <div>
             <div class="flex justify-center mb-4">
@@ -279,8 +274,8 @@ const onBack = () => {
                 type="number"
                 :disabled="isLoading || expiresIn === 0"
                 size="xl"
-                @complete="onComplete"
                 otp
+                @complete="onComplete"
               />
             </div>
 

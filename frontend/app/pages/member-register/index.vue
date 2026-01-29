@@ -65,7 +65,7 @@ const onSubmit = handleSubmit(async (values) => {
   const config = useRuntimeConfig();
 
   try {
-    const response = await $fetch('/auth/register/send-code', {
+    await $fetch('/auth/register/send-code', {
       method: 'POST',
       baseURL: config.public.apiBaseUrl,
       body: {
@@ -91,13 +91,11 @@ const onSubmit = handleSubmit(async (values) => {
       // バリデーションエラー
       if (apiError.code === 'VALIDATION_ERROR' && apiError.details) {
         setErrors(apiError.details);
-      }
-      // レート制限エラー
-      else if (apiError.code === 'RATE_LIMIT_EXCEEDED') {
+      } else if (apiError.code === 'RATE_LIMIT_EXCEEDED') {
+        // レート制限エラー
         generalError.value = apiError.message || '送信回数の上限に達しました。しばらくしてからお試しください';
-      }
-      // その他のエラー
-      else {
+      } else {
+        // その他のエラー
         generalError.value = apiError.message || '登録処理中にエラーが発生しました';
       }
     } else {
@@ -137,7 +135,7 @@ const onSubmit = handleSubmit(async (values) => {
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
       <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-        <form @submit="onSubmit" class="space-y-6">
+        <form class="space-y-6" @submit="onSubmit">
           <!-- 全体エラーメッセージ -->
             <UAlert
             v-if="generalError"
