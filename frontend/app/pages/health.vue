@@ -1,14 +1,14 @@
 <script setup lang="ts">
 interface HealthResponse {
-  success: boolean
-  message: string
-  data?: unknown
+  success: boolean;
+  message: string;
+  data?: unknown;
 }
 
-const config = useRuntimeConfig()
+const config = useRuntimeConfig();
 const { data: healthData, error, pending, refresh } = useLazyFetch<HealthResponse>('/health', {
   baseURL: config.public.apiBaseUrl,
-})
+});
 </script>
 
 <template>
