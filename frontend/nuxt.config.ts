@@ -5,6 +5,13 @@ export default defineNuxtConfig({
     '@nuxt/ui',
   ],
 
+  runtimeConfig: {
+    public: {
+      apiBaseUrl: '',
+      baseUrl: '',
+    },
+  },
+
   devtools: {
     enabled: true,
   },
