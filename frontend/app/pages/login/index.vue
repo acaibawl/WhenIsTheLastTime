@@ -54,7 +54,6 @@ const onSubmit = handleSubmit(async (values) => {
     path: '/',
     sameSite: 'lax',
     secure: config.public.baseUrl.startsWith('https'),
-    httpOnly: true,
   });
 
   try {
