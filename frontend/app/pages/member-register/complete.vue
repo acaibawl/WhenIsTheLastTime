@@ -13,26 +13,8 @@ if (!nickname.value || nickname.value === 'ゲスト') {
   await navigateTo('/register');
 }
 
-// 自動的にメイン画面に遷移（3秒後）
-let redirectTimer: NodeJS.Timeout | null = null;
-
-onMounted(() => {
-  redirectTimer = setTimeout(() => {
-    navigateTo('/');
-  }, 3000);
-});
-
-onUnmounted(() => {
-  if (redirectTimer) {
-    clearTimeout(redirectTimer);
-  }
-});
-
 // 手動でメイン画面に遷移
 const onStart = () => {
-  if (redirectTimer) {
-    clearTimeout(redirectTimer);
-  }
   navigateTo('/');
 };
 </script>
@@ -72,11 +54,6 @@ const onStart = () => {
           はじめる
         </UButton>
       </div>
-
-      <!-- 自動遷移の案内 -->
-      <p class="mt-6 text-sm text-gray-500">
-        3秒後に自動的にメイン画面に移動します
-      </p>
     </div>
   </div>
 </template>
