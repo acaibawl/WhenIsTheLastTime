@@ -1,20 +1,4 @@
-// 型定義
-export type CategoryType
-  = | 'pin'
-    | 'book'
-    | 'folder'
-    | 'star'
-    | 'chart'
-    | 'sun'
-    | 'person'
-    | 'hospital'
-    | 'medical'
-    | 'leaf'
-    | 'search'
-    | 'people'
-    | 'snowflake'
-    | 'fire'
-    | 'lightning';
+import type { CategoryType } from '~/constants/categories';
 
 interface CreateEventPayload {
   name: string;

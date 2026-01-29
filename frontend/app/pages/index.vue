@@ -128,30 +128,14 @@
 
 <script setup lang="ts">
 import { intervalToDuration } from 'date-fns';
+import type { CategoryType } from '~/constants/categories';
+import { getCategoryIcon } from '~/constants/categories';
 import CreateEventModal from '~/components/EventForm/CreateEventModal.vue';
 
 // ページメタデータ（認証ミドルウェアを適用）
 definePageMeta({
   middleware: 'auth',
 });
-
-// 型定義
-type CategoryType
-  = | 'pin'
-    | 'book'
-    | 'folder'
-    | 'star'
-    | 'chart'
-    | 'sun'
-    | 'person'
-    | 'hospital'
-    | 'medical'
-    | 'leaf'
-    | 'search'
-    | 'people'
-    | 'snowflake'
-    | 'fire'
-    | 'lightning';
 
 interface Event {
   id: number;
@@ -161,25 +145,6 @@ interface Event {
   lastExecutedMemo: string | null;
   elapsed_days: number;
 }
-
-// カテゴリーアイコンマッピング
-const CATEGORY_ICON_MAP: Record<CategoryType, string> = {
-  pin: '📌',
-  book: '📚',
-  folder: '📁',
-  star: '⭐',
-  chart: '📊',
-  sun: '☀️',
-  person: '👤',
-  hospital: '🏥',
-  medical: '➕',
-  leaf: '🍃',
-  search: '🔍',
-  people: '👥',
-  snowflake: '❄️',
-  fire: '🔥',
-  lightning: '⚡',
-};
 
 // リアクティブステート
 const loading = ref(true);
@@ -202,10 +167,6 @@ const filteredEvents = computed(() => {
 });
 
 // メソッド
-const getCategoryIcon = (categoryIcon: CategoryType): string => {
-  return CATEGORY_ICON_MAP[categoryIcon] || '📌';
-};
-
 const toggleSearch = () => {
   showSearch.value = !showSearch.value;
   if (!showSearch.value) {
