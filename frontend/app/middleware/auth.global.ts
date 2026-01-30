@@ -3,9 +3,6 @@
  * ログイン状態でのみアクセスを許可する
  */
 export default defineNuxtRouteMiddleware((to) => {
-  // クライアントサイドでのみ実行
-  if (import.meta.server) return;
-
   // アクセストークンの確認
   const token = useCookie('access_token');
 

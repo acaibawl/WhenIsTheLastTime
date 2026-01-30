@@ -2,7 +2,7 @@
 .required::after {
   content: "必須";
   color: #ffffff;
-  background: #0014cc;
+  background: #017fed;
   font-size: 0.8em;
   padding: 0.3em;
   border-radius: 0.5em;
