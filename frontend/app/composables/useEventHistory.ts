@@ -1,4 +1,4 @@
-import { intervalToDuration, differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears } from 'date-fns';
+import { intervalToDuration, differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears, startOfDay } from 'date-fns';
 import type { Event, History, Statistics, GroupedHistory } from '~~/app/types/eventHistory';
 
 export const useEventHistory = (eventId: string | number) => {
@@ -249,15 +249,15 @@ export const useEventHistory = (eventId: string | number) => {
     }
   };
 
-  // 経過時間のフォーマット
+  // 経過時間のフォーマット（日付のみで比較）
   const formatElapsedTime = (executedAt: string): string => {
-    const now = new Date();
-    const executedDate = new Date(executedAt);
+    const nowDate = startOfDay(new Date());
+    const execDate = startOfDay(new Date(executedAt));
 
-    const days = differenceInDays(now, executedDate);
-    const weeks = differenceInWeeks(now, executedDate);
-    const months = differenceInMonths(now, executedDate);
-    const years = differenceInYears(now, executedDate);
+    const days = differenceInDays(nowDate, execDate);
+    const weeks = differenceInWeeks(nowDate, execDate);
+    const months = differenceInMonths(nowDate, execDate);
+    const years = differenceInYears(nowDate, execDate);
 
     if (days === 0) return '今日';
     if (days === 1) return '昨日';
