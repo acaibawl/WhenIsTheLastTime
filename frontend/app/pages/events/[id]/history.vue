@@ -131,44 +131,7 @@
       <template #body>
         <div class="space-y-2">
           <p class="text-gray-600 dark:text-gray-400">
-            {{ historyToDelete ? new Date(historyToDelete.executedAt).toLocaleString('ja-JP') : '' }}
-          </p>
-          <p class="text-gray-600 dark:text-gray-400">
-            {{ historyToDelete?.memo || '（メモなし）' }}
-          </p>
-          <p class="text-sm text-gray-500 dark:text-gray-500 mt-4">
-            この操作は取り消せません。
-          </p>
-        </div>
-      </template>
-
-      <template #footer>
-        <UButton
-          color="neutral"
-          variant="outline"
-          @click="showHistoryDeleteDialog = false"
-        >
-          キャンセル
-        </UButton>
-        <UButton
-          color="error"
-          @click="handleDeleteHistory"
-        >
-          削除
-        </UButton>
-      </template>
-    </UModal>
-
-    <!-- 履歴削除確認ダイアログ -->
-    <UModal
-      v-model:open="showHistoryDeleteDialog"
-      title="この履歴を削除しますか？"
-      :ui="{ footer: 'justify-end' }"
-    >
-      <template #body>
-        <div class="space-y-2">
-          <p class="text-gray-600 dark:text-gray-400">
-            {{ historyToDelete ? new Date(historyToDelete.executedAt).toLocaleString('ja-JP') : '' }}
+            {{ historyToDelete ? formatDateTime(historyToDelete.executedAt) : '' }}
           </p>
           <p class="text-gray-600 dark:text-gray-400">
             {{ historyToDelete?.memo || '（メモなし）' }}
@@ -272,6 +235,8 @@
 </template>
 
 <script setup lang="ts">
+import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
 import { getCategoryIcon } from '~/constants/categories';
 import StatisticsBadges from '~/components/EventHistory/StatisticsBadges.vue';
 import HistoryStatistics from '~/components/EventHistory/HistoryStatistics.vue';
@@ -297,6 +262,11 @@ const {
   formatElapsedTime,
 } = useEventHistory(eventId);
 
+// 日時フォーマット用ヘルパー
+const formatDateTime = (dateStr: string): string => {
+  return format(new Date(dateStr), 'yyyy/MM/dd HH:mm', { locale: ja });
+};
+
 // 履歴削除用の状態
 const showHistoryDeleteDialog = ref(false);
 const historyToDelete = ref<History | null>(null);
@@ -311,10 +281,10 @@ const isAddingHistory = ref(false);
 // 現在日時をデフォルト値として設定するヘルパー
 const setDefaultDateTime = () => {
   const now = new Date();
-  // YYYY-MM-DD形式
-  newHistoryDate.value = now.toISOString().split('T')[0] || '';
-  // HH:MM形式
-  newHistoryTime.value = now.toTimeString().slice(0, 5);
+  // YYYY-MM-DD形式（ローカルタイム）
+  newHistoryDate.value = format(now, 'yyyy-MM-dd');
+  // HH:MM形式（ローカルタイム）
+  newHistoryTime.value = format(now, 'HH:mm');
   newHistoryMemo.value = '';
 };
 
@@ -361,9 +331,9 @@ const handleSaveNewHistory = async () => {
 
   isAddingHistory.value = true;
 
-  // 日付と時刻を結合してISO 8601形式に変換（ミリ秒なし）
+  // 日付と時刻を結合してISO 8601形式に変換（ローカルタイムゾーン付き）
   const date = new Date(`${newHistoryDate.value}T${newHistoryTime.value}:00`);
-  const executedAt = date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const executedAt = format(date, "yyyy-MM-dd'T'HH:mm:ssxxx");
 
   const success = await addHistory(executedAt, newHistoryMemo.value || undefined);
 
