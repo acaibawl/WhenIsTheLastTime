@@ -22,14 +22,14 @@
         <div v-else class="flex-1" />
 
         <!-- メニューボタン -->
-        <UDropdown :items="menuItems">
+        <UDropdownMenu :items="menuItems" :ui="{ content: 'w-40' }">
           <UButton
             icon="i-lucide-more-vertical"
             color="neutral"
             variant="ghost"
             aria-label="メニューを開く"
           />
-        </UDropdown>
+        </UDropdownMenu>
       </div>
     </header>
 
@@ -86,14 +86,12 @@
     </button>
 
     <!-- 削除確認ダイアログ -->
-    <UModal v-model="showDeleteDialog">
-      <UCard>
-        <template #header>
-          <h2 class="text-lg font-semibold">
-            このイベントを削除しますか？
-          </h2>
-        </template>
-
+    <UModal
+      v-model:open="showDeleteDialog"
+      title="このイベントを削除しますか？"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #body>
         <div class="space-y-4">
           <p class="text-gray-600 dark:text-gray-400">
             「<span class="font-semibold">{{ event?.name }}</span>」
@@ -103,25 +101,23 @@
             この操作は取り消せません。
           </p>
         </div>
+      </template>
 
-        <template #footer>
-          <div class="flex gap-3 justify-end">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              @click="showDeleteDialog = false"
-            >
-              キャンセル
-            </UButton>
-            <UButton
-              color="error"
-              @click="handleDeleteEvent"
-            >
-              削除
-            </UButton>
-          </div>
-        </template>
-      </UCard>
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          @click="showDeleteDialog = false"
+        >
+          キャンセル
+        </UButton>
+        <UButton
+          color="error"
+          @click="handleDeleteEvent"
+        >
+          削除
+        </UButton>
+      </template>
     </UModal>
   </div>
 </template>
@@ -150,16 +146,21 @@ const {
 
 // メニュー項目
 const menuItems = computed(() => [
-  [{
-    label: '編集',
-    icon: 'i-lucide-pencil',
-    click: () => router.push(`/events/${eventId}/edit`),
-  }],
-  [{
-    label: '削除',
-    icon: 'i-lucide-trash',
-    click: () => showDeleteDialog.value = true,
-  }],
+  [
+    {
+      label: '編集',
+      icon: 'i-lucide-pencil',
+      onSelect: () => router.push(`/events/${eventId}/edit`),
+    },
+  ],
+  [
+    {
+      label: '削除',
+      icon: 'i-lucide-trash',
+      color: 'error' as const,
+      onSelect: () => showDeleteDialog.value = true,
+    },
+  ],
 ]);
 
 // 戻るボタン
