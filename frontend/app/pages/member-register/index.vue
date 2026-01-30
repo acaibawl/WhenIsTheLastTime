@@ -272,14 +272,5 @@ const onSubmit = handleSubmit(async (values) => {
 </template>
 
 <style scoped>
-/* TODO: 共通のスタイルに移動する */
-.required::after {
-  content: "必須";
-  color: #ffffff;
-  background: #cc0000;
-  font-size: 0.8em;
-  padding: 0.3em;
-  border-radius: 0.5em;
-  margin-left:0.3em;
-}
+
 </style>
