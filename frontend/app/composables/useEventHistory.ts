@@ -1,5 +1,36 @@
 import { intervalToDuration, differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears, startOfDay } from 'date-fns';
+import type { Ref } from 'vue';
 import type { Event, History, Statistics, GroupedHistory } from '~~/app/types/eventHistory';
+
+/**
+ * 履歴操作時の共通エラーハンドリング
+ * @param err - エラーオブジェクト
+ * @param errorTitle - トースト通知のタイトル
+ * @param token - 認証トークン（401エラー時にクリアするため）
+ * @returns 401エラーの場合は true（リダイレクト済み）
+ */
+const handleHistoryError = async (
+  err: any,
+  errorTitle: string,
+  token: Ref<string | null | undefined>,
+): Promise<boolean> => {
+  console.error(errorTitle, err);
+
+  // 401エラーの場合はログイン画面へ
+  if (err.status === 401 || err.statusCode === 401) {
+    token.value = null;
+    await navigateTo('/login');
+    return true;
+  }
+
+  const toast = useToast();
+  toast.add({
+    title: errorTitle,
+    description: err.data?.message || err.message || 'エラーが発生しました',
+    color: 'error',
+  });
+  return false;
+};
 
 export const useEventHistory = (eventId: string | number) => {
   const event = ref<Event | null>(null);
@@ -230,21 +261,7 @@ export const useEventHistory = (eventId: string | number) => {
         throw new Error(response.message || '履歴の削除に失敗しました');
       }
     } catch (err: any) {
-      console.error('Failed to delete history:', err);
-
-      // 401エラーの場合はログイン画面へ
-      if (err.status === 401 || err.statusCode === 401) {
-        token.value = null;
-        await navigateTo('/login');
-        return false;
-      }
-
-      const toast = useToast();
-      toast.add({
-        title: '履歴の削除に失敗しました',
-        description: err.data?.message || err.message || 'エラーが発生しました',
-        color: 'error',
-      });
+      await handleHistoryError(err, '履歴の削除に失敗しました', token);
       return false;
     }
   };
@@ -297,21 +314,7 @@ export const useEventHistory = (eventId: string | number) => {
         throw new Error(response.message || '履歴の追加に失敗しました');
       }
     } catch (err: any) {
-      console.error('Failed to add history:', err);
-
-      // 401エラーの場合はログイン画面へ
-      if (err.status === 401 || err.statusCode === 401) {
-        token.value = null;
-        await navigateTo('/login');
-        return false;
-      }
-
-      const toast = useToast();
-      toast.add({
-        title: '履歴の追加に失敗しました',
-        description: err.data?.message || err.message || 'エラーが発生しました',
-        color: 'error',
-      });
+      await handleHistoryError(err, '履歴の追加に失敗しました', token);
       return false;
     }
   };
@@ -348,21 +351,7 @@ export const useEventHistory = (eventId: string | number) => {
         throw new Error(response.message || '履歴の更新に失敗しました');
       }
     } catch (err: any) {
-      console.error('Failed to update history:', err);
-
-      // 401エラーの場合はログイン画面へ
-      if (err.status === 401 || err.statusCode === 401) {
-        token.value = null;
-        await navigateTo('/login');
-        return false;
-      }
-
-      const toast = useToast();
-      toast.add({
-        title: '履歴の更新に失敗しました',
-        description: err.data?.message || err.message || 'エラーが発生しました',
-        color: 'error',
-      });
+      await handleHistoryError(err, '履歴の更新に失敗しました', token);
       return false;
     }
   };

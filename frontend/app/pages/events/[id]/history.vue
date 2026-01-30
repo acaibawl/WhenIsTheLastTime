@@ -166,50 +166,10 @@
       :ui="{ footer: 'justify-end' }"
     >
       <template #body>
-        <div class="space-y-4">
-          <!-- 日付入力 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              日付 <span class="text-red-500">*</span>
-            </label>
-            <input
-              v-model="newHistoryDate"
-              type="date"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-          </div>
-
-          <!-- 時刻入力 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              時刻 <span class="text-red-500">*</span>
-            </label>
-            <input
-              v-model="newHistoryTime"
-              type="time"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-          </div>
-
-          <!-- メモ入力 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              メモ
-            </label>
-            <textarea
-              v-model="newHistoryMemo"
-              rows="3"
-              maxlength="500"
-              placeholder="メモを入力（任意）"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
-              {{ newHistoryMemo.length }} / 500
-            </p>
-          </div>
-        </div>
+        <HistoryForm
+          ref="addFormRef"
+          @update:form-data="addFormData = $event"
+        />
       </template>
 
       <template #footer>
@@ -224,7 +184,7 @@
         <UButton
           color="primary"
           :loading="isAddingHistory"
-          :disabled="!newHistoryDate || !newHistoryTime"
+          :disabled="!addFormData.date || !addFormData.time"
           @click="handleSaveNewHistory"
         >
           追加
@@ -239,50 +199,11 @@
       :ui="{ footer: 'justify-end' }"
     >
       <template #body>
-        <div class="space-y-4">
-          <!-- 日付入力 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              日付 <span class="text-red-500">*</span>
-            </label>
-            <input
-              v-model="editHistoryDate"
-              type="date"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-          </div>
-
-          <!-- 時刻入力 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              時刻 <span class="text-red-500">*</span>
-            </label>
-            <input
-              v-model="editHistoryTime"
-              type="time"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            >
-          </div>
-
-          <!-- メモ入力 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              メモ
-            </label>
-            <textarea
-              v-model="editHistoryMemo"
-              rows="3"
-              maxlength="500"
-              placeholder="メモを入力（任意）"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
-              {{ editHistoryMemo.length }} / 500
-            </p>
-          </div>
-        </div>
+        <HistoryForm
+          ref="editFormRef"
+          :history="editingHistory ?? undefined"
+          @update:form-data="editFormData = $event"
+        />
       </template>
 
       <template #footer>
@@ -297,7 +218,7 @@
         <UButton
           color="primary"
           :loading="isEditingHistory"
-          :disabled="!editHistoryDate || !editHistoryTime"
+          :disabled="!editFormData.date || !editFormData.time"
           @click="handleSaveEditHistory"
         >
           更新
@@ -314,6 +235,8 @@ import { getCategoryIcon } from '~/constants/categories';
 import StatisticsBadges from '~/components/EventHistory/StatisticsBadges.vue';
 import HistoryStatistics from '~/components/EventHistory/HistoryStatistics.vue';
 import HistoryList from '~/components/EventHistory/HistoryList.vue';
+import HistoryForm from '~/components/EventHistory/HistoryForm.vue';
+import type { HistoryFormData } from '~/components/EventHistory/HistoryForm.vue';
 import type { History } from '~~/app/types/eventHistory';
 
 const route = useRoute();
@@ -348,28 +271,16 @@ const historyToDelete = ref<History | null>(null);
 
 // 履歴追加用の状態
 const showAddHistoryModal = ref(false);
-const newHistoryDate = ref('');
-const newHistoryTime = ref('');
-const newHistoryMemo = ref('');
+const addFormRef = ref<InstanceType<typeof HistoryForm> | null>(null);
+const addFormData = ref<HistoryFormData>({ date: '', time: '', memo: '' });
 const isAddingHistory = ref(false);
 
 // 履歴編集用の状態
 const showEditHistoryModal = ref(false);
+const editFormRef = ref<InstanceType<typeof HistoryForm> | null>(null);
+const editFormData = ref<HistoryFormData>({ date: '', time: '', memo: '' });
 const editingHistory = ref<History | null>(null);
-const editHistoryDate = ref('');
-const editHistoryTime = ref('');
-const editHistoryMemo = ref('');
 const isEditingHistory = ref(false);
-
-// 現在日時をデフォルト値として設定するヘルパー
-const setDefaultDateTime = () => {
-  const now = new Date();
-  // YYYY-MM-DD形式（ローカルタイム）
-  newHistoryDate.value = format(now, 'yyyy-MM-dd');
-  // HH:MM形式（ローカルタイム）
-  newHistoryTime.value = format(now, 'HH:mm');
-  newHistoryMemo.value = '';
-};
 
 // メニュー項目
 const menuItems = computed(() => [
@@ -397,13 +308,16 @@ const navigateBack = () => {
 
 // 履歴追加
 const handleAddHistory = () => {
-  setDefaultDateTime();
   showAddHistoryModal.value = true;
+  // モーダルが開いた後にフォームをリセット
+  nextTick(() => {
+    addFormRef.value?.reset();
+  });
 };
 
 // 履歴追加を保存
 const handleSaveNewHistory = async () => {
-  if (!newHistoryDate.value || !newHistoryTime.value) {
+  if (!addFormData.value.date || !addFormData.value.time) {
     const toast = useToast();
     toast.add({
       title: '日時を入力してください',
@@ -415,18 +329,15 @@ const handleSaveNewHistory = async () => {
   isAddingHistory.value = true;
 
   // 日付と時刻を結合してISO 8601形式に変換（ローカルタイムゾーン付き）
-  const date = new Date(`${newHistoryDate.value}T${newHistoryTime.value}:00`);
+  const date = new Date(`${addFormData.value.date}T${addFormData.value.time}:00`);
   const executedAt = format(date, 'yyyy-MM-dd\'T\'HH:mm:ssxxx');
 
-  const success = await addHistory(executedAt, newHistoryMemo.value || undefined);
+  const success = await addHistory(executedAt, addFormData.value.memo || undefined);
 
   isAddingHistory.value = false;
 
   if (success) {
     showAddHistoryModal.value = false;
-    newHistoryDate.value = '';
-    newHistoryTime.value = '';
-    newHistoryMemo.value = '';
   }
 };
 
@@ -436,11 +347,6 @@ const handleSelectHistory = (historyId: number) => {
   if (!history) return;
 
   editingHistory.value = history;
-  // 既存の日時をフォームに設定
-  const executedDate = new Date(history.executedAt);
-  editHistoryDate.value = format(executedDate, 'yyyy-MM-dd');
-  editHistoryTime.value = format(executedDate, 'HH:mm');
-  editHistoryMemo.value = history.memo || '';
   showEditHistoryModal.value = true;
 };
 
@@ -448,7 +354,7 @@ const handleSelectHistory = (historyId: number) => {
 const handleSaveEditHistory = async () => {
   if (!editingHistory.value) return;
 
-  if (!editHistoryDate.value || !editHistoryTime.value) {
+  if (!editFormData.value.date || !editFormData.value.time) {
     const toast = useToast();
     toast.add({
       title: '日時を入力してください',
@@ -460,13 +366,13 @@ const handleSaveEditHistory = async () => {
   isEditingHistory.value = true;
 
   // 日付と時刻を結合してISO 8601形式に変換（ローカルタイムゾーン付き）
-  const date = new Date(`${editHistoryDate.value}T${editHistoryTime.value}:00`);
+  const date = new Date(`${editFormData.value.date}T${editFormData.value.time}:00`);
   const executedAt = format(date, 'yyyy-MM-dd\'T\'HH:mm:ssxxx');
 
   const success = await updateHistory(
     editingHistory.value.id,
     executedAt,
-    editHistoryMemo.value || undefined,
+    editFormData.value.memo || undefined,
   );
 
   isEditingHistory.value = false;
@@ -474,9 +380,6 @@ const handleSaveEditHistory = async () => {
   if (success) {
     showEditHistoryModal.value = false;
     editingHistory.value = null;
-    editHistoryDate.value = '';
-    editHistoryTime.value = '';
-    editHistoryMemo.value = '';
   }
 };
 
