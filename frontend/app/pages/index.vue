@@ -279,30 +279,27 @@ const handleEventCreated = async () => {
   await fetchEvents();
 };
 
-// ライフサイクルフック
-onBeforeMount(async () => {
-  const fetchUserInfo = async () => {
-    try {
-      const token = useCookie('access_token');
-      const config = useRuntimeConfig();
-      const response = await $fetch<any>('/auth/me', {
-        baseURL: config.public.apiBaseUrl,
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
-      });
+const fetchUserInfo = async () => {
+  try {
+    const token = useCookie('access_token');
+    const config = useRuntimeConfig();
+    const response = await $fetch<any>('/auth/me', {
+      baseURL: config.public.apiBaseUrl,
+      headers: {
+        Authorization: `Bearer ${token.value}`,
+      },
+    });
 
-      if (response.success && response.data.user) {
-        userNickname.value = response.data.user.nickname;
-      }
-    } catch (err) {
-      console.error('Failed to fetch user info:', err);
+    if (response.success && response.data.user) {
+      userNickname.value = response.data.user.nickname;
     }
-  };
+  } catch (err) {
+    console.error('Failed to fetch user info:', err);
+  }
+};
 
-  await Promise.all([
-    fetchUserInfo(),
-    fetchEvents(),
-  ]);
-});
+await Promise.all([
+  fetchUserInfo(),
+  fetchEvents(),
+]);
 </script>

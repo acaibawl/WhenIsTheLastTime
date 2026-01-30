@@ -8,6 +8,10 @@ WORKDIR /app
 # RUN npm install
 # COPY . .
 
+RUN apk add --no-cache ca-certificates
+COPY when_is_the_last_time.local.crt /usr/local/share/ca-certificates/when_is_the_last_time.local.crt
+RUN update-ca-certificates
+
 # ポート3000を公開
 EXPOSE 3000
 

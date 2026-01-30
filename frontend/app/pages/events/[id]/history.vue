@@ -199,7 +199,5 @@ const handleDeleteEvent = async () => {
 };
 
 // 初回ロード
-onMounted(() => {
-  loadData();
-});
+await loadData();
 </script>
