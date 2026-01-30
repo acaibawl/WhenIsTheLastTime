@@ -132,18 +132,12 @@ import StatisticsBadges from '~/components/EventHistory/StatisticsBadges.vue';
 import HistoryStatistics from '~/components/EventHistory/HistoryStatistics.vue';
 import HistoryList from '~/components/EventHistory/HistoryList.vue';
 
-// ページメタデータ（認証ミドルウェアを適用）
-definePageMeta({
-  middleware: 'auth',
-});
-
 const route = useRoute();
 const router = useRouter();
 const eventId = route.params.id as string;
 
 const {
   event,
-  histories,
   isLoading,
   error,
   statistics,

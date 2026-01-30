@@ -15,9 +15,11 @@
     "@iconify-json/lucide": "^1.2.82",
     "@iconify-json/simple-icons": "^1.2.63",
     "@nuxt/ui": "^4.3.0",
+    "@pinia/nuxt": "^0.11.3",
     "date-fns": "^4.1.0",
     "modern-css-reset": "^1.4.0",
     "nuxt": "^4.2.2",
+    "pinia": "^3.0.4",
     "vee-validate": "^4.15.1",
     "yup": "^1.7.1",
     "yup-locale-ja": "^1.0.0"

@@ -132,11 +132,6 @@ import type { CategoryType } from '~/constants/categories';
 import { getCategoryIcon } from '~/constants/categories';
 import CreateEventModal from '~/components/EventForm/CreateEventModal.vue';
 
-// ページメタデータ（認証ミドルウェアを適用）
-definePageMeta({
-  middleware: 'auth',
-});
-
 interface Event {
   id: number;
   name: string;
