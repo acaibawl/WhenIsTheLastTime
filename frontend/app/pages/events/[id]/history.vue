@@ -158,6 +158,116 @@
         </UButton>
       </template>
     </UModal>
+
+    <!-- 履歴削除確認ダイアログ -->
+    <UModal
+      v-model:open="showHistoryDeleteDialog"
+      title="この履歴を削除しますか？"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #body>
+        <div class="space-y-2">
+          <p class="text-gray-600 dark:text-gray-400">
+            {{ historyToDelete ? new Date(historyToDelete.executedAt).toLocaleString('ja-JP') : '' }}
+          </p>
+          <p class="text-gray-600 dark:text-gray-400">
+            {{ historyToDelete?.memo || '（メモなし）' }}
+          </p>
+          <p class="text-sm text-gray-500 dark:text-gray-500 mt-4">
+            この操作は取り消せません。
+          </p>
+        </div>
+      </template>
+
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          @click="showHistoryDeleteDialog = false"
+        >
+          キャンセル
+        </UButton>
+        <UButton
+          color="error"
+          @click="handleDeleteHistory"
+        >
+          削除
+        </UButton>
+      </template>
+    </UModal>
+
+    <!-- 履歴追加モーダル -->
+    <UModal
+      v-model:open="showAddHistoryModal"
+      title="履歴を追加"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #body>
+        <div class="space-y-4">
+          <!-- 日付入力 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              日付 <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="newHistoryDate"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+          </div>
+
+          <!-- 時刻入力 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              時刻 <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="newHistoryTime"
+              type="time"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+          </div>
+
+          <!-- メモ入力 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              メモ
+            </label>
+            <textarea
+              v-model="newHistoryMemo"
+              rows="3"
+              maxlength="500"
+              placeholder="メモを入力（任意）"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+              {{ newHistoryMemo.length }} / 500
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          :disabled="isAddingHistory"
+          @click="showAddHistoryModal = false"
+        >
+          キャンセル
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="isAddingHistory"
+          :disabled="!newHistoryDate || !newHistoryTime"
+          @click="handleSaveNewHistory"
+        >
+          追加
+        </UButton>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -183,12 +293,30 @@ const {
   loadData,
   deleteEvent,
   deleteHistory,
+  addHistory,
   formatElapsedTime,
 } = useEventHistory(eventId);
 
 // 履歴削除用の状態
 const showHistoryDeleteDialog = ref(false);
 const historyToDelete = ref<History | null>(null);
+
+// 履歴追加用の状態
+const showAddHistoryModal = ref(false);
+const newHistoryDate = ref('');
+const newHistoryTime = ref('');
+const newHistoryMemo = ref('');
+const isAddingHistory = ref(false);
+
+// 現在日時をデフォルト値として設定するヘルパー
+const setDefaultDateTime = () => {
+  const now = new Date();
+  // YYYY-MM-DD形式
+  newHistoryDate.value = now.toISOString().split('T')[0] || '';
+  // HH:MM形式
+  newHistoryTime.value = now.toTimeString().slice(0, 5);
+  newHistoryMemo.value = '';
+};
 
 // メニュー項目
 const menuItems = computed(() => [
@@ -216,12 +344,37 @@ const navigateBack = () => {
 
 // 履歴追加
 const handleAddHistory = () => {
-  // TODO: 履歴追加画面へ遷移（未実装）
-  const toast = useToast();
-  toast.add({
-    title: '履歴追加機能は未実装です',
-    color: 'warning',
-  });
+  setDefaultDateTime();
+  showAddHistoryModal.value = true;
+};
+
+// 履歴追加を保存
+const handleSaveNewHistory = async () => {
+  if (!newHistoryDate.value || !newHistoryTime.value) {
+    const toast = useToast();
+    toast.add({
+      title: '日時を入力してください',
+      color: 'warning',
+    });
+    return;
+  }
+
+  isAddingHistory.value = true;
+
+  // 日付と時刻を結合してISO 8601形式に変換（ミリ秒なし）
+  const date = new Date(`${newHistoryDate.value}T${newHistoryTime.value}:00`);
+  const executedAt = date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+  const success = await addHistory(executedAt, newHistoryMemo.value || undefined);
+
+  isAddingHistory.value = false;
+
+  if (success) {
+    showAddHistoryModal.value = false;
+    newHistoryDate.value = '';
+    newHistoryTime.value = '';
+    newHistoryMemo.value = '';
+  }
 };
 
 // 履歴選択（編集）

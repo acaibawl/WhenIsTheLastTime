@@ -267,6 +267,55 @@ export const useEventHistory = (eventId: string | number) => {
     return `${years}年前`;
   };
 
+  // 履歴追加
+  const addHistory = async (executedAt: string, memo?: string): Promise<boolean> => {
+    try {
+      const response = await $fetch<any>(`/events/${eventId}/history`, {
+        method: 'POST',
+        baseURL: config.public.apiBaseUrl,
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: {
+          executedAt: executedAt,
+          memo: memo || null,
+        },
+      });
+
+      if (response.success) {
+        // ローカルの履歴リストに追加
+        const newHistory = response.data.history;
+        histories.value = [...histories.value, newHistory];
+
+        const toast = useToast();
+        toast.add({
+          title: '履歴を追加しました',
+          color: 'success',
+        });
+        return true;
+      } else {
+        throw new Error(response.message || '履歴の追加に失敗しました');
+      }
+    } catch (err: any) {
+      console.error('Failed to add history:', err);
+
+      // 401エラーの場合はログイン画面へ
+      if (err.status === 401 || err.statusCode === 401) {
+        token.value = null;
+        await navigateTo('/login');
+        return false;
+      }
+
+      const toast = useToast();
+      toast.add({
+        title: '履歴の追加に失敗しました',
+        description: err.data?.message || err.message || 'エラーが発生しました',
+        color: 'error',
+      });
+      return false;
+    }
+  };
+
   return {
     event,
     histories,
@@ -280,6 +329,7 @@ export const useEventHistory = (eventId: string | number) => {
     loadData,
     deleteEvent,
     deleteHistory,
+    addHistory,
     formatElapsedTime,
   };
 };
