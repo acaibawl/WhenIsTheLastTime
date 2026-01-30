@@ -14,7 +14,10 @@ services:
       - php
       - frontend
     networks:
-      - witlt_network
+      default:
+        aliases:
+          - backend.local
+
 
   # Laravel アプリケーション (PHP 8.4)
   php:
@@ -30,8 +33,6 @@ services:
       - db
       - redis
       - mailpit
-    networks:
-      - witlt_network
 
   # Nuxt 4 フロントエンド
   frontend:
@@ -44,10 +45,10 @@ services:
       - ./frontend:/app
     ports:
       - "3000:3000"
+    environment:
+      - NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/when_is_the_last_time.local.crt
     # プロジェクトセットアップ時にnpm installのため、コンテナを起動したままにする（一時的にtailコマンド使用）
     # command: tail -f /dev/null
-    networks:
-      - witlt_network
 
   # MySQL 8.x
   db:
@@ -64,8 +65,6 @@ services:
       - db_data:/var/lib/mysql
       - ./container/mysql/sql:/docker-entrypoint-initdb.d
       - ./container/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
-    networks:
-      - witlt_network
 
   # Redis 8.2
   redis:
@@ -76,8 +75,6 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
-    networks:
-      - witlt_network
 
   # Mailpit - メール送信テスト
   mailpit:
@@ -90,12 +87,6 @@ services:
       - MP_MAX_MESSAGES=5000
       - MP_SMTP_AUTH_ACCEPT_ANY=1
       - MP_SMTP_AUTH_ALLOW_INSECURE=1
-    networks:
-      - witlt_network
-
-networks:
-  witlt_network:
-    driver: bridge
 
 volumes:
   db_data:
