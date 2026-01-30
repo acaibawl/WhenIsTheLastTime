@@ -149,7 +149,7 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- メールアドレス -->
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-              メールアドレス<span class="text-red-500 ml-1">*</span>
+              <span class="required">メールアドレス</span>
             </label>
             <UInput
               id="email"
@@ -167,7 +167,7 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- パスワード -->
           <div>
             <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-              パスワード<span class="text-red-500 ml-1">*</span>
+              <span class="required">パスワード</span>
             </label>
             <UInput
               id="password"
@@ -196,7 +196,7 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- パスワード（確認） -->
           <div>
             <label for="passwordConfirmation" class="block text-sm font-medium text-gray-700 mb-2">
-              パスワード（確認）<span class="text-red-500 ml-1">*</span>
+              <span class="required">パスワード（確認）</span>
             </label>
             <UInput
               id="passwordConfirmation"
@@ -224,7 +224,7 @@ const onSubmit = handleSubmit(async (values) => {
           <!-- ニックネーム -->
           <div>
             <label for="nickname" class="block text-sm font-medium text-gray-700 mb-2">
-              ニックネーム<span class="text-red-500 ml-1">*</span>
+              <span class="required">ニックネーム</span>
             </label>
             <UInput
               id="nickname"
@@ -270,3 +270,7 @@ const onSubmit = handleSubmit(async (values) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+
+</style>
