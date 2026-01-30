@@ -28,7 +28,7 @@ const { data: healthData, error, pending, refresh } = useLazyFetch<HealthRespons
         <!-- エラー状態 -->
         <div v-else-if="error" class="p-4 bg-red-50 border border-red-200 rounded-lg">
           <div class="flex items-start">
-            <UIcon name="i-heroicons-x-circle" class="text-red-500 text-2xl mr-2 flex-shrink-0" />
+            <UIcon name="i-heroicons-x-circle" class="text-red-500 text-2xl mr-2 shrink-0" />
             <div>
               <h3 class="font-semibold text-red-800">エラーが発生しました</h3>
               <p class="text-red-600 mt-1">{{ error.message }}</p>
@@ -39,7 +39,7 @@ const { data: healthData, error, pending, refresh } = useLazyFetch<HealthRespons
         <!-- 成功状態 -->
         <div v-else-if="healthData" class="p-4 bg-green-50 border border-green-200 rounded-lg">
           <div class="flex items-start">
-            <UIcon name="i-heroicons-check-circle" class="text-green-500 text-2xl mr-2 flex-shrink-0" />
+            <UIcon name="i-heroicons-check-circle" class="text-green-500 text-2xl mr-2 shrink-0" />
             <div>
               <h3 class="font-semibold text-green-800">システムは正常に動作しています</h3>
               <p class="text-green-600 mt-1">{{ healthData.message }}</p>
