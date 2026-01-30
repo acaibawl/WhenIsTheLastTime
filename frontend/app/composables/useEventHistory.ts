@@ -1,38 +1,5 @@
-import { differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears } from 'date-fns';
-import type { CategoryType } from '~/constants/categories';
-
-interface Event {
-  id: number;
-  name: string;
-  categoryIcon: CategoryType;
-  lastExecutedHistoryId: number | null;
-  lastExecutedAt: string | null;
-  lastExecutedMemo: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface History {
-  id: number;
-  eventId: number;
-  executedAt: string;
-  memo?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Statistics {
-  thisWeek: number;
-  thisMonth: number;
-  total: number;
-  averageInterval: string;
-  averageDays: number;
-}
-
-interface GroupedHistory {
-  yearMonth: string;
-  histories: History[];
-}
+import { intervalToDuration, differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears } from 'date-fns';
+import type { Event, History, Statistics, GroupedHistory } from '~~/app/types/eventHistory';
 
 export const useEventHistory = (eventId: string | number) => {
   const event = ref<Event | null>(null);
@@ -103,12 +70,12 @@ export const useEventHistory = (eventId: string | number) => {
 
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const thisWeek = histories.value.filter((h) => {
+    const thisWeek = histories.value.filter((h: History) => {
       const executedDate = new Date(h.executedAt);
       return executedDate >= startOfWeek;
     }).length;
 
-    const thisMonth = histories.value.filter((h) => {
+    const thisMonth = histories.value.filter((h: History) => {
       const executedDate = new Date(h.executedAt);
       return executedDate >= startOfMonth;
     }).length;
@@ -165,24 +132,25 @@ export const useEventHistory = (eventId: string | number) => {
 
   // 期間のフォーマット
   const formatDuration = (days: number): string => {
-    const years = Math.floor(days / 365);
-    const months = Math.floor((days % 365) / 30);
-    const remainingDays = days % 30;
+    const duration = intervalToDuration({ start: 0, end: days * 24 * 60 * 60 * 1000 });
 
-    let result = '';
-    if (years > 0) result += `${years}年`;
-    if (months > 0) result += `${months}ヶ月`;
-    if (remainingDays > 0 || result === '') result += `${remainingDays}日`;
-    result += 'ごと';
+    const parts: string[] = [];
+    if (duration.years) parts.push(`${duration.years}年`);
+    if (duration.months) parts.push(`${duration.months}ヶ月`);
+    if (duration.days) parts.push(`${duration.days}日`);
 
-    return result;
+    if (parts.length === 0) {
+      return '0日ごと';
+    }
+
+    return parts.join('') + 'ごと';
   };
 
   // 年月でグループ化
   const groupedHistories = computed<GroupedHistory[]>(() => {
     const groups: Record<string, History[]> = {};
 
-    histories.value.forEach((history) => {
+    histories.value.forEach((history: History) => {
       const date = new Date(history.executedAt);
       const yearMonth = `${date.getFullYear()}年${String(date.getMonth() + 1).padStart(2, '0')}月`;
 

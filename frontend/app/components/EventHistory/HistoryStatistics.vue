@@ -22,13 +22,8 @@
 </template>
 
 <script setup lang="ts">
-interface Statistics {
-  thisWeek: number;
-  thisMonth: number;
-  total: number;
-  averageInterval: string;
-  averageDays: number;
-}
+
+import type { Statistics } from '~~/app/types/eventHistory';
 
 defineProps<{
   statistics: Statistics;

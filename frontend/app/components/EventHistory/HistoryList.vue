@@ -54,19 +54,7 @@
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
-interface History {
-  id: number;
-  eventId: number;
-  executedAt: string;
-  memo?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface GroupedHistory {
-  yearMonth: string;
-  histories: History[];
-}
+import type { GroupedHistory } from '~~/app/types/eventHistory';
 
 defineProps<{
   groupedHistories: GroupedHistory[];
