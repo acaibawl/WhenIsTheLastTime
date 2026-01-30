@@ -60,7 +60,9 @@
         v-if="groupedHistories.length > 0"
         :grouped-histories="groupedHistories"
         :format-elapsed-time="formatElapsedTime"
+        :can-delete-history="canDeleteHistory"
         @select="handleSelectHistory"
+        @delete="handleDeleteHistoryClick"
       />
 
       <!-- 空の状態 -->
@@ -85,7 +87,7 @@
       <span class="font-medium">履歴を追加</span>
     </button>
 
-    <!-- 削除確認ダイアログ -->
+    <!-- イベント削除確認ダイアログ -->
     <UModal
       v-model:open="showDeleteDialog"
       title="このイベントを削除しますか？"
@@ -119,6 +121,43 @@
         </UButton>
       </template>
     </UModal>
+
+    <!-- 履歴削除確認ダイアログ -->
+    <UModal
+      v-model:open="showHistoryDeleteDialog"
+      title="この履歴を削除しますか？"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #body>
+        <div class="space-y-2">
+          <p class="text-gray-600 dark:text-gray-400">
+            {{ historyToDelete ? new Date(historyToDelete.executedAt).toLocaleString('ja-JP') : '' }}
+          </p>
+          <p class="text-gray-600 dark:text-gray-400">
+            {{ historyToDelete?.memo || '（メモなし）' }}
+          </p>
+          <p class="text-sm text-gray-500 dark:text-gray-500 mt-4">
+            この操作は取り消せません。
+          </p>
+        </div>
+      </template>
+
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          @click="showHistoryDeleteDialog = false"
+        >
+          キャンセル
+        </UButton>
+        <UButton
+          color="error"
+          @click="handleDeleteHistory"
+        >
+          削除
+        </UButton>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -127,6 +166,7 @@ import { getCategoryIcon } from '~/constants/categories';
 import StatisticsBadges from '~/components/EventHistory/StatisticsBadges.vue';
 import HistoryStatistics from '~/components/EventHistory/HistoryStatistics.vue';
 import HistoryList from '~/components/EventHistory/HistoryList.vue';
+import type { History } from '~~/app/types/eventHistory';
 
 const route = useRoute();
 const router = useRouter();
@@ -139,10 +179,16 @@ const {
   statistics,
   groupedHistories,
   showDeleteDialog,
+  canDeleteHistory,
   loadData,
   deleteEvent,
+  deleteHistory,
   formatElapsedTime,
 } = useEventHistory(eventId);
+
+// 履歴削除用の状態
+const showHistoryDeleteDialog = ref(false);
+const historyToDelete = ref<History | null>(null);
 
 // メニュー項目
 const menuItems = computed(() => [
@@ -186,6 +232,23 @@ const handleSelectHistory = (historyId: number) => {
     title: '履歴編集機能は未実装です',
     color: 'warning',
   });
+};
+
+// 履歴削除ボタンクリック
+const handleDeleteHistoryClick = (history: History) => {
+  historyToDelete.value = history;
+  showHistoryDeleteDialog.value = true;
+};
+
+// 履歴削除実行
+const handleDeleteHistory = async () => {
+  if (!historyToDelete.value) return;
+
+  const success = await deleteHistory(historyToDelete.value.id);
+  if (success) {
+    showHistoryDeleteDialog.value = false;
+    historyToDelete.value = null;
+  }
 };
 
 // イベント削除

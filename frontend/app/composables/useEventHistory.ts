@@ -189,6 +189,66 @@ export const useEventHistory = (eventId: string | number) => {
     }
   };
 
+  // 履歴削除可能かどうか（履歴が2件以上の場合のみ削除可能）
+  const canDeleteHistory = computed(() => {
+    return histories.value.length > 1;
+  });
+
+  // 履歴削除
+  const deleteHistory = async (historyId: number) => {
+    // 履歴が1件のみの場合は削除不可
+    if (!canDeleteHistory.value) {
+      const toast = useToast();
+      toast.add({
+        title: '最後の履歴は削除できません',
+        description: 'イベントには最低1件の履歴が必要です。',
+        color: 'warning',
+      });
+      return false;
+    }
+
+    try {
+      const response = await $fetch<any>(`/events/${eventId}/history/${historyId}`, {
+        method: 'DELETE',
+        baseURL: config.public.apiBaseUrl,
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+      });
+
+      if (response.success) {
+        // ローカルの履歴リストから削除
+        histories.value = histories.value.filter(h => h.id !== historyId);
+
+        const toast = useToast();
+        toast.add({
+          title: '履歴を削除しました',
+          color: 'info',
+        });
+        return true;
+      } else {
+        throw new Error(response.message || '履歴の削除に失敗しました');
+      }
+    } catch (err: any) {
+      console.error('Failed to delete history:', err);
+
+      // 401エラーの場合はログイン画面へ
+      if (err.status === 401 || err.statusCode === 401) {
+        token.value = null;
+        await navigateTo('/login');
+        return false;
+      }
+
+      const toast = useToast();
+      toast.add({
+        title: '履歴の削除に失敗しました',
+        description: err.data?.message || err.message || 'エラーが発生しました',
+        color: 'error',
+      });
+      return false;
+    }
+  };
+
   // 経過時間のフォーマット
   const formatElapsedTime = (executedAt: string): string => {
     const now = new Date();
@@ -216,8 +276,10 @@ export const useEventHistory = (eventId: string | number) => {
     groupedHistories,
     showMenu,
     showDeleteDialog,
+    canDeleteHistory,
     loadData,
     deleteEvent,
+    deleteHistory,
     formatElapsedTime,
   };
 };
