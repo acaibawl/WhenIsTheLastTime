@@ -22,14 +22,14 @@
         <div v-else class="flex-1" />
 
         <!-- メニューボタン -->
-        <UDropdown :items="menuItems">
+        <UDropdownMenu :items="menuItems" :ui="{ content: 'w-40' }">
           <UButton
             icon="i-lucide-more-vertical"
             color="neutral"
             variant="ghost"
             aria-label="メニューを開く"
           />
-        </UDropdown>
+        </UDropdownMenu>
       </div>
     </header>
 
@@ -60,7 +60,9 @@
         v-if="groupedHistories.length > 0"
         :grouped-histories="groupedHistories"
         :format-elapsed-time="formatElapsedTime"
+        :can-delete-history="canDeleteHistory"
         @select="handleSelectHistory"
+        @delete="handleDeleteHistoryClick"
       />
 
       <!-- 空の状態 -->
@@ -85,15 +87,13 @@
       <span class="font-medium">履歴を追加</span>
     </button>
 
-    <!-- 削除確認ダイアログ -->
-    <UModal v-model="showDeleteDialog">
-      <UCard>
-        <template #header>
-          <h2 class="text-lg font-semibold">
-            このイベントを削除しますか？
-          </h2>
-        </template>
-
+    <!-- イベント削除確認ダイアログ -->
+    <UModal
+      v-model:open="showDeleteDialog"
+      title="このイベントを削除しますか？"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #body>
         <div class="space-y-4">
           <p class="text-gray-600 dark:text-gray-400">
             「<span class="font-semibold">{{ event?.name }}</span>」
@@ -103,34 +103,141 @@
             この操作は取り消せません。
           </p>
         </div>
+      </template>
 
-        <template #footer>
-          <div class="flex gap-3 justify-end">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              @click="showDeleteDialog = false"
-            >
-              キャンセル
-            </UButton>
-            <UButton
-              color="error"
-              @click="handleDeleteEvent"
-            >
-              削除
-            </UButton>
-          </div>
-        </template>
-      </UCard>
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          @click="showDeleteDialog = false"
+        >
+          キャンセル
+        </UButton>
+        <UButton
+          color="error"
+          @click="handleDeleteEvent"
+        >
+          削除
+        </UButton>
+      </template>
+    </UModal>
+
+    <!-- 履歴削除確認ダイアログ -->
+    <UModal
+      v-model:open="showHistoryDeleteDialog"
+      title="この履歴を削除しますか？"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #body>
+        <div class="space-y-2">
+          <p class="text-gray-600 dark:text-gray-400">
+            {{ historyToDelete ? formatDateTime(historyToDelete.executedAt) : '' }}
+          </p>
+          <p class="text-gray-600 dark:text-gray-400">
+            {{ historyToDelete?.memo || '（メモなし）' }}
+          </p>
+          <p class="text-sm text-gray-500 dark:text-gray-500 mt-4">
+            この操作は取り消せません。
+          </p>
+        </div>
+      </template>
+
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          @click="showHistoryDeleteDialog = false"
+        >
+          キャンセル
+        </UButton>
+        <UButton
+          color="error"
+          @click="handleDeleteHistory"
+        >
+          削除
+        </UButton>
+      </template>
+    </UModal>
+
+    <!-- 履歴追加モーダル -->
+    <UModal
+      v-model:open="showAddHistoryModal"
+      title="履歴を追加"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #body>
+        <HistoryForm
+          ref="addFormRef"
+          @update:form-data="addFormData = $event"
+        />
+      </template>
+
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          :disabled="isAddingHistory"
+          @click="showAddHistoryModal = false"
+        >
+          キャンセル
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="isAddingHistory"
+          :disabled="!addFormData.date || !addFormData.time"
+          @click="handleSaveNewHistory"
+        >
+          追加
+        </UButton>
+      </template>
+    </UModal>
+
+    <!-- 履歴編集モーダル -->
+    <UModal
+      v-model:open="showEditHistoryModal"
+      title="履歴を編集"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #body>
+        <HistoryForm
+          ref="editFormRef"
+          :history="editingHistory ?? undefined"
+          @update:form-data="editFormData = $event"
+        />
+      </template>
+
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          :disabled="isEditingHistory"
+          @click="showEditHistoryModal = false"
+        >
+          キャンセル
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="isEditingHistory"
+          :disabled="!editFormData.date || !editFormData.time"
+          @click="handleSaveEditHistory"
+        >
+          更新
+        </UButton>
+      </template>
     </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
+import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
 import { getCategoryIcon } from '~/constants/categories';
 import StatisticsBadges from '~/components/EventHistory/StatisticsBadges.vue';
 import HistoryStatistics from '~/components/EventHistory/HistoryStatistics.vue';
 import HistoryList from '~/components/EventHistory/HistoryList.vue';
+import HistoryForm from '~/components/EventHistory/HistoryForm.vue';
+import type { HistoryFormData } from '~/components/EventHistory/HistoryForm.vue';
+import type { History } from '~~/app/types/eventHistory';
 
 const route = useRoute();
 const router = useRouter();
@@ -138,28 +245,60 @@ const eventId = route.params.id as string;
 
 const {
   event,
+  histories,
   isLoading,
   error,
   statistics,
   groupedHistories,
   showDeleteDialog,
+  canDeleteHistory,
   loadData,
   deleteEvent,
+  deleteHistory,
+  addHistory,
+  updateHistory,
   formatElapsedTime,
 } = useEventHistory(eventId);
 
+// 日時フォーマット用ヘルパー
+const formatDateTime = (dateStr: string): string => {
+  return format(new Date(dateStr), 'yyyy/MM/dd HH:mm', { locale: ja });
+};
+
+// 履歴削除用の状態
+const showHistoryDeleteDialog = ref(false);
+const historyToDelete = ref<History | null>(null);
+
+// 履歴追加用の状態
+const showAddHistoryModal = ref(false);
+const addFormRef = ref<InstanceType<typeof HistoryForm> | null>(null);
+const addFormData = ref<HistoryFormData>({ date: '', time: '', memo: '' });
+const isAddingHistory = ref(false);
+
+// 履歴編集用の状態
+const showEditHistoryModal = ref(false);
+const editFormRef = ref<InstanceType<typeof HistoryForm> | null>(null);
+const editFormData = ref<HistoryFormData>({ date: '', time: '', memo: '' });
+const editingHistory = ref<History | null>(null);
+const isEditingHistory = ref(false);
+
 // メニュー項目
 const menuItems = computed(() => [
-  [{
-    label: '編集',
-    icon: 'i-lucide-pencil',
-    click: () => router.push(`/events/${eventId}/edit`),
-  }],
-  [{
-    label: '削除',
-    icon: 'i-lucide-trash',
-    click: () => showDeleteDialog.value = true,
-  }],
+  [
+    {
+      label: '編集',
+      icon: 'i-lucide-pencil',
+      onSelect: () => router.push(`/events/${eventId}/edit`),
+    },
+  ],
+  [
+    {
+      label: '削除',
+      icon: 'i-lucide-trash',
+      color: 'error' as const,
+      onSelect: () => showDeleteDialog.value = true,
+    },
+  ],
 ]);
 
 // 戻るボタン
@@ -169,22 +308,96 @@ const navigateBack = () => {
 
 // 履歴追加
 const handleAddHistory = () => {
-  // TODO: 履歴追加画面へ遷移（未実装）
-  const toast = useToast();
-  toast.add({
-    title: '履歴追加機能は未実装です',
-    color: 'warning',
+  showAddHistoryModal.value = true;
+  // モーダルが開いた後にフォームをリセット
+  nextTick(() => {
+    addFormRef.value?.reset();
   });
+};
+
+// 履歴追加を保存
+const handleSaveNewHistory = async () => {
+  if (!addFormData.value.date || !addFormData.value.time) {
+    const toast = useToast();
+    toast.add({
+      title: '日時を入力してください',
+      color: 'warning',
+    });
+    return;
+  }
+
+  isAddingHistory.value = true;
+
+  // 日付と時刻を結合してISO 8601形式に変換（ローカルタイムゾーン付き）
+  const date = new Date(`${addFormData.value.date}T${addFormData.value.time}:00`);
+  const executedAt = format(date, 'yyyy-MM-dd\'T\'HH:mm:ssxxx');
+
+  const success = await addHistory(executedAt, addFormData.value.memo || undefined);
+
+  isAddingHistory.value = false;
+
+  if (success) {
+    showAddHistoryModal.value = false;
+  }
 };
 
 // 履歴選択（編集）
 const handleSelectHistory = (historyId: number) => {
-  // TODO: 履歴編集画面へ遷移（未実装）
-  const toast = useToast();
-  toast.add({
-    title: '履歴編集機能は未実装です',
-    color: 'warning',
-  });
+  const history = histories.value.find(h => h.id === historyId);
+  if (!history) return;
+
+  editingHistory.value = history;
+  showEditHistoryModal.value = true;
+};
+
+// 履歴編集を保存
+const handleSaveEditHistory = async () => {
+  if (!editingHistory.value) return;
+
+  if (!editFormData.value.date || !editFormData.value.time) {
+    const toast = useToast();
+    toast.add({
+      title: '日時を入力してください',
+      color: 'warning',
+    });
+    return;
+  }
+
+  isEditingHistory.value = true;
+
+  // 日付と時刻を結合してISO 8601形式に変換（ローカルタイムゾーン付き）
+  const date = new Date(`${editFormData.value.date}T${editFormData.value.time}:00`);
+  const executedAt = format(date, 'yyyy-MM-dd\'T\'HH:mm:ssxxx');
+
+  const success = await updateHistory(
+    editingHistory.value.id,
+    executedAt,
+    editFormData.value.memo || undefined,
+  );
+
+  isEditingHistory.value = false;
+
+  if (success) {
+    showEditHistoryModal.value = false;
+    editingHistory.value = null;
+  }
+};
+
+// 履歴削除ボタンクリック
+const handleDeleteHistoryClick = (history: History) => {
+  historyToDelete.value = history;
+  showHistoryDeleteDialog.value = true;
+};
+
+// 履歴削除実行
+const handleDeleteHistory = async () => {
+  if (!historyToDelete.value) return;
+
+  const success = await deleteHistory(historyToDelete.value.id);
+  if (success) {
+    showHistoryDeleteDialog.value = false;
+    historyToDelete.value = null;
+  }
 };
 
 // イベント削除

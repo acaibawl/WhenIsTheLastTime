@@ -1,5 +1,36 @@
-import { intervalToDuration, differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears } from 'date-fns';
+import { intervalToDuration, differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears, startOfDay } from 'date-fns';
+import type { Ref } from 'vue';
 import type { Event, History, Statistics, GroupedHistory } from '~~/app/types/eventHistory';
+
+/**
+ * 履歴操作時の共通エラーハンドリング
+ * @param err - エラーオブジェクト
+ * @param errorTitle - トースト通知のタイトル
+ * @param token - 認証トークン（401エラー時にクリアするため）
+ * @returns 401エラーの場合は true（リダイレクト済み）
+ */
+const handleHistoryError = async (
+  err: any,
+  errorTitle: string,
+  token: Ref<string | null | undefined>,
+): Promise<boolean> => {
+  console.error(errorTitle, err);
+
+  // 401エラーの場合はログイン画面へ
+  if (err.status === 401 || err.statusCode === 401) {
+    token.value = null;
+    await navigateTo('/login');
+    return true;
+  }
+
+  const toast = useToast();
+  toast.add({
+    title: errorTitle,
+    description: err.data?.message || err.message || 'エラーが発生しました',
+    color: 'error',
+  });
+  return false;
+};
 
 export const useEventHistory = (eventId: string | number) => {
   const event = ref<Event | null>(null);
@@ -189,15 +220,61 @@ export const useEventHistory = (eventId: string | number) => {
     }
   };
 
-  // 経過時間のフォーマット
-  const formatElapsedTime = (executedAt: string): string => {
-    const now = new Date();
-    const executedDate = new Date(executedAt);
+  // 履歴削除可能かどうか（履歴が2件以上の場合のみ削除可能）
+  const canDeleteHistory = computed(() => {
+    return histories.value.length > 1;
+  });
 
-    const days = differenceInDays(now, executedDate);
-    const weeks = differenceInWeeks(now, executedDate);
-    const months = differenceInMonths(now, executedDate);
-    const years = differenceInYears(now, executedDate);
+  // 履歴削除
+  const deleteHistory = async (historyId: number) => {
+    // 履歴が1件のみの場合は削除不可
+    if (!canDeleteHistory.value) {
+      const toast = useToast();
+      toast.add({
+        title: '最後の履歴は削除できません',
+        description: 'イベントには最低1件の履歴が必要です。',
+        color: 'warning',
+      });
+      return false;
+    }
+
+    try {
+      const response = await $fetch<any>(`/events/${eventId}/history/${historyId}`, {
+        method: 'DELETE',
+        baseURL: config.public.apiBaseUrl,
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+      });
+
+      if (response.success) {
+        // ローカルの履歴リストから削除
+        histories.value = histories.value.filter(h => h.id !== historyId);
+
+        const toast = useToast();
+        toast.add({
+          title: '履歴を削除しました',
+          color: 'info',
+        });
+        return true;
+      } else {
+        throw new Error(response.message || '履歴の削除に失敗しました');
+      }
+    } catch (err: any) {
+      await handleHistoryError(err, '履歴の削除に失敗しました', token);
+      return false;
+    }
+  };
+
+  // 経過時間のフォーマット（日付のみで比較）
+  const formatElapsedTime = (executedAt: string): string => {
+    const nowDate = startOfDay(new Date());
+    const execDate = startOfDay(new Date(executedAt));
+
+    const days = differenceInDays(nowDate, execDate);
+    const weeks = differenceInWeeks(nowDate, execDate);
+    const months = differenceInMonths(nowDate, execDate);
+    const years = differenceInYears(nowDate, execDate);
 
     if (days === 0) return '今日';
     if (days === 1) return '昨日';
@@ -205,6 +282,78 @@ export const useEventHistory = (eventId: string | number) => {
     if (weeks < 4) return `${weeks}週間前`;
     if (months < 12) return `${months}ヶ月前`;
     return `${years}年前`;
+  };
+
+  // 履歴追加
+  const addHistory = async (executedAt: string, memo?: string): Promise<boolean> => {
+    try {
+      const response = await $fetch<any>(`/events/${eventId}/history`, {
+        method: 'POST',
+        baseURL: config.public.apiBaseUrl,
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: {
+          executedAt: executedAt,
+          memo: memo || null,
+        },
+      });
+
+      if (response.success) {
+        // ローカルの履歴リストに追加
+        const newHistory = response.data.history;
+        histories.value = [...histories.value, newHistory];
+
+        const toast = useToast();
+        toast.add({
+          title: '履歴を追加しました',
+          color: 'success',
+        });
+        return true;
+      } else {
+        throw new Error(response.message || '履歴の追加に失敗しました');
+      }
+    } catch (err: any) {
+      await handleHistoryError(err, '履歴の追加に失敗しました', token);
+      return false;
+    }
+  };
+
+  // 履歴更新
+  const updateHistory = async (historyId: number, executedAt: string, memo?: string): Promise<boolean> => {
+    try {
+      const response = await $fetch<any>(`/events/${eventId}/history/${historyId}`, {
+        method: 'PUT',
+        baseURL: config.public.apiBaseUrl,
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: {
+          executedAt: executedAt,
+          memo: memo || null,
+        },
+      });
+
+      if (response.success) {
+        // ローカルの履歴リストを更新
+        const updatedHistory = response.data.history;
+        histories.value = histories.value.map(h =>
+          h.id === historyId ? updatedHistory : h,
+        );
+
+        const toast = useToast();
+        toast.add({
+          title: '履歴を更新しました',
+          color: 'success',
+        });
+        return true;
+      } else {
+        throw new Error(response.message || '履歴の更新に失敗しました');
+      }
+    } catch (err: any) {
+      await handleHistoryError(err, '履歴の更新に失敗しました', token);
+      return false;
+    }
   };
 
   return {
@@ -216,8 +365,12 @@ export const useEventHistory = (eventId: string | number) => {
     groupedHistories,
     showMenu,
     showDeleteDialog,
+    canDeleteHistory,
     loadData,
     deleteEvent,
+    deleteHistory,
+    addHistory,
+    updateHistory,
     formatElapsedTime,
   };
 };

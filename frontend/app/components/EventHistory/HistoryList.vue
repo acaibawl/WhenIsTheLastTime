@@ -16,12 +16,14 @@
         <div
           v-for="history in group.histories"
           :key="history.id"
-          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
-          @click="$emit('select', history.id)"
+          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
         >
           <div class="flex items-start gap-4">
             <!-- 日付バッジ -->
-            <div class="shrink-0">
+            <div
+              class="shrink-0 cursor-pointer active:scale-[0.98]"
+              @click="$emit('select', history.id)"
+            >
               <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-400 flex items-center justify-center">
                 <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
                   {{ formatDay(history.executedAt) }}
@@ -30,7 +32,10 @@
             </div>
 
             <!-- メモとサブ情報 -->
-            <div class="flex-1 min-w-0">
+            <div
+              class="flex-1 min-w-0 cursor-pointer active:scale-[0.98]"
+              @click="$emit('select', history.id)"
+            >
               <!-- メモ -->
               <div class="text-base font-medium text-gray-900 dark:text-white mb-1 line-clamp-2">
                 {{ history.memo || '（メモなし）' }}
@@ -43,6 +48,20 @@
                 <span>{{ formatElapsedTime(history.executedAt) }}</span>
               </div>
             </div>
+
+            <!-- メニューボタン -->
+            <div class="shrink-0">
+              <UDropdownMenu :items="getMenuItems(history)" :ui="{ content: 'w-32' }">
+                <UButton
+                  icon="i-lucide-more-vertical"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="履歴メニューを開く"
+                  @click.stop
+                />
+              </UDropdownMenu>
+            </div>
           </div>
         </div>
       </div>
@@ -54,16 +73,45 @@
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
-import type { GroupedHistory } from '~~/app/types/eventHistory';
+import type { GroupedHistory, History } from '~~/app/types/eventHistory';
 
-defineProps<{
+const props = defineProps<{
   groupedHistories: GroupedHistory[];
   formatElapsedTime: (executedAt: string) => string;
+  canDeleteHistory: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   select: [historyId: number];
+  delete: [history: History];
 }>();
+
+// メニュー項目を生成
+const getMenuItems = (history: History) => {
+  const items = [
+    [
+      {
+        label: '編集',
+        icon: 'i-lucide-pencil',
+        onSelect: () => emit('select', history.id),
+      },
+    ],
+  ];
+
+  // 履歴が2件以上の場合のみ削除ボタンを表示
+  if (props.canDeleteHistory) {
+    items.push([
+      {
+        label: '削除',
+        icon: 'i-lucide-trash',
+        color: 'error' as const,
+        onSelect: () => emit('delete', history),
+      },
+    ]);
+  }
+
+  return items;
+};
 
 // 日付（日）をフォーマット
 const formatDay = (dateStr: string): string => {
