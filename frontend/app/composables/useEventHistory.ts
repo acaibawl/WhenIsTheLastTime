@@ -91,22 +91,8 @@ export const useEventHistory = (eventId: string | number) => {
 
   // 平均間隔を計算
   const calculateAverageInterval = (historyList: History[]): string => {
-    if (historyList.length < 2) return '-';
-
-    const sortedHistories = [...historyList].sort((a, b) =>
-      new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime(),
-    );
-
-    let totalDays = 0;
-    for (let i = 0; i < sortedHistories.length - 1; i++) {
-      const diff = differenceInDays(
-        new Date(sortedHistories[i]!.executedAt),
-        new Date(sortedHistories[i + 1]!.executedAt),
-      );
-      totalDays += diff;
-    }
-
-    const avgDays = Math.round(totalDays / (sortedHistories.length - 1));
+    const avgDays = calculateAverageDays(historyList);
+    if (avgDays === 0) return '-';
     return formatDuration(avgDays);
   };
 
