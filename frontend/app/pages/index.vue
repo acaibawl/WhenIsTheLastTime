@@ -21,7 +21,7 @@
 
         <!-- ニックネーム -->
         <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-600 dark:text-gray-300 max-w-[100px] truncate">
+          <span class="text-sm text-gray-600 dark:text-gray-300 max-w-25 truncate">
             👤 {{ userNickname }}
           </span>
 
@@ -84,11 +84,11 @@
 
       <!-- イベント一覧 -->
       <div v-else class="space-y-3">
-        <div
+        <NuxtLink
           v-for="event in filteredEvents"
           :key="event.id"
-          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] transition-transform"
-          @click="navigateToHistory"
+          :to="`/events/${event.id}/history`"
+          class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
         >
           <!-- イベント名 -->
           <div class="flex items-start gap-3 mb-2">
@@ -110,7 +110,7 @@
             </p>
             <p>{{ formatDate(event.lastExecutedAt) }}</p>
           </div>
-        </div>
+        </NuxtLink>
       </div>
     </main>
 
@@ -268,10 +268,6 @@ const formatDate = (dateStr: string | null): string => {
   } catch {
     return '無効な日付';
   }
-};
-
-const navigateToHistory = () => {
-  // TODO: イベント履歴画面への遷移（未実装）
 };
 
 const openCreateModal = () => {
