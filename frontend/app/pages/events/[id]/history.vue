@@ -231,6 +231,79 @@
         </UButton>
       </template>
     </UModal>
+
+    <!-- 履歴編集モーダル -->
+    <UModal
+      v-model:open="showEditHistoryModal"
+      title="履歴を編集"
+      :ui="{ footer: 'justify-end' }"
+    >
+      <template #body>
+        <div class="space-y-4">
+          <!-- 日付入力 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              日付 <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="editHistoryDate"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+          </div>
+
+          <!-- 時刻入力 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              時刻 <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="editHistoryTime"
+              type="time"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+          </div>
+
+          <!-- メモ入力 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              メモ
+            </label>
+            <textarea
+              v-model="editHistoryMemo"
+              rows="3"
+              maxlength="500"
+              placeholder="メモを入力（任意）"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+              {{ editHistoryMemo.length }} / 500
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          :disabled="isEditingHistory"
+          @click="showEditHistoryModal = false"
+        >
+          キャンセル
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="isEditingHistory"
+          :disabled="!editHistoryDate || !editHistoryTime"
+          @click="handleSaveEditHistory"
+        >
+          更新
+        </UButton>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -249,6 +322,7 @@ const eventId = route.params.id as string;
 
 const {
   event,
+  histories,
   isLoading,
   error,
   statistics,
@@ -259,6 +333,7 @@ const {
   deleteEvent,
   deleteHistory,
   addHistory,
+  updateHistory,
   formatElapsedTime,
 } = useEventHistory(eventId);
 
@@ -277,6 +352,14 @@ const newHistoryDate = ref('');
 const newHistoryTime = ref('');
 const newHistoryMemo = ref('');
 const isAddingHistory = ref(false);
+
+// 履歴編集用の状態
+const showEditHistoryModal = ref(false);
+const editingHistory = ref<History | null>(null);
+const editHistoryDate = ref('');
+const editHistoryTime = ref('');
+const editHistoryMemo = ref('');
+const isEditingHistory = ref(false);
 
 // 現在日時をデフォルト値として設定するヘルパー
 const setDefaultDateTime = () => {
@@ -333,7 +416,7 @@ const handleSaveNewHistory = async () => {
 
   // 日付と時刻を結合してISO 8601形式に変換（ローカルタイムゾーン付き）
   const date = new Date(`${newHistoryDate.value}T${newHistoryTime.value}:00`);
-  const executedAt = format(date, "yyyy-MM-dd'T'HH:mm:ssxxx");
+  const executedAt = format(date, 'yyyy-MM-dd\'T\'HH:mm:ssxxx');
 
   const success = await addHistory(executedAt, newHistoryMemo.value || undefined);
 
@@ -349,12 +432,52 @@ const handleSaveNewHistory = async () => {
 
 // 履歴選択（編集）
 const handleSelectHistory = (historyId: number) => {
-  // TODO: 履歴編集画面へ遷移（未実装）
-  const toast = useToast();
-  toast.add({
-    title: '履歴編集機能は未実装です',
-    color: 'warning',
-  });
+  const history = histories.value.find(h => h.id === historyId);
+  if (!history) return;
+
+  editingHistory.value = history;
+  // 既存の日時をフォームに設定
+  const executedDate = new Date(history.executedAt);
+  editHistoryDate.value = format(executedDate, 'yyyy-MM-dd');
+  editHistoryTime.value = format(executedDate, 'HH:mm');
+  editHistoryMemo.value = history.memo || '';
+  showEditHistoryModal.value = true;
+};
+
+// 履歴編集を保存
+const handleSaveEditHistory = async () => {
+  if (!editingHistory.value) return;
+
+  if (!editHistoryDate.value || !editHistoryTime.value) {
+    const toast = useToast();
+    toast.add({
+      title: '日時を入力してください',
+      color: 'warning',
+    });
+    return;
+  }
+
+  isEditingHistory.value = true;
+
+  // 日付と時刻を結合してISO 8601形式に変換（ローカルタイムゾーン付き）
+  const date = new Date(`${editHistoryDate.value}T${editHistoryTime.value}:00`);
+  const executedAt = format(date, 'yyyy-MM-dd\'T\'HH:mm:ssxxx');
+
+  const success = await updateHistory(
+    editingHistory.value.id,
+    executedAt,
+    editHistoryMemo.value || undefined,
+  );
+
+  isEditingHistory.value = false;
+
+  if (success) {
+    showEditHistoryModal.value = false;
+    editingHistory.value = null;
+    editHistoryDate.value = '';
+    editHistoryTime.value = '';
+    editHistoryMemo.value = '';
+  }
 };
 
 // 履歴削除ボタンクリック

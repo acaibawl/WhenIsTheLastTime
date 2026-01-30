@@ -316,6 +316,57 @@ export const useEventHistory = (eventId: string | number) => {
     }
   };
 
+  // 履歴更新
+  const updateHistory = async (historyId: number, executedAt: string, memo?: string): Promise<boolean> => {
+    try {
+      const response = await $fetch<any>(`/events/${eventId}/history/${historyId}`, {
+        method: 'PUT',
+        baseURL: config.public.apiBaseUrl,
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: {
+          executedAt: executedAt,
+          memo: memo || null,
+        },
+      });
+
+      if (response.success) {
+        // ローカルの履歴リストを更新
+        const updatedHistory = response.data.history;
+        histories.value = histories.value.map(h =>
+          h.id === historyId ? updatedHistory : h,
+        );
+
+        const toast = useToast();
+        toast.add({
+          title: '履歴を更新しました',
+          color: 'success',
+        });
+        return true;
+      } else {
+        throw new Error(response.message || '履歴の更新に失敗しました');
+      }
+    } catch (err: any) {
+      console.error('Failed to update history:', err);
+
+      // 401エラーの場合はログイン画面へ
+      if (err.status === 401 || err.statusCode === 401) {
+        token.value = null;
+        await navigateTo('/login');
+        return false;
+      }
+
+      const toast = useToast();
+      toast.add({
+        title: '履歴の更新に失敗しました',
+        description: err.data?.message || err.message || 'エラーが発生しました',
+        color: 'error',
+      });
+      return false;
+    }
+  };
+
   return {
     event,
     histories,
@@ -330,6 +381,7 @@ export const useEventHistory = (eventId: string | number) => {
     deleteEvent,
     deleteHistory,
     addHistory,
+    updateHistory,
     formatElapsedTime,
   };
 };
