@@ -31,7 +31,7 @@
                     placeholder="重要なイベントをここに入力する"
                     maxlength="100"
                     size="lg"
-                    :ui="{ base: 'w-full' }"
+                    class="w-full"
                     aria-required="true"
                     :aria-invalid="!!errors.eventName"
                     />
@@ -90,7 +90,7 @@
                     placeholder="メモを入力..."
                     :rows="4"
                     maxlength="500"
-                    :ui="{ base: 'w-full' }"
+                    class="w-full"
                     />
                     <template #hint>
                     <span class="text-xs text-gray-500">
@@ -124,20 +124,18 @@
     </UModal>
 
     <!-- キャンセル確認ダイアログ -->
-    <UModal v-model:open="showCancelDialog">
-        <UCard>
-        <template #header>
-            <h3 class="text-lg font-semibold">
-            変更を破棄しますか？
-            </h3>
+    <UModal
+        v-model:open="showCancelDialog"
+        title="変更を破棄しますか？"
+        :ui="{ footer: 'justify-end' }"
+    >
+        <template #body>
+            <p class="text-gray-600 dark:text-gray-400">
+                入力した内容は保存されません。
+            </p>
         </template>
 
-        <p class="text-gray-600 dark:text-gray-400">
-            入力した内容は保存されません。
-        </p>
-
         <template #footer>
-            <div class="flex justify-end gap-3">
             <UButton
                 color="neutral"
                 variant="ghost"
@@ -151,9 +149,7 @@
             >
                 破棄
             </UButton>
-            </div>
         </template>
-        </UCard>
     </UModal>
   </div>
 </template>

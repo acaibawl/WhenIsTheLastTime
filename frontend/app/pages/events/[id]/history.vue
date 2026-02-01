@@ -225,6 +225,13 @@
         </UButton>
       </template>
     </UModal>
+
+    <!-- イベント編集モーダル -->
+    <EditEventModal
+      v-model="showEditEventModal"
+      :event="event"
+      @updated="handleEventUpdated"
+    />
   </div>
 </template>
 
@@ -236,8 +243,9 @@ import StatisticsBadges from '~/components/EventHistory/StatisticsBadges.vue';
 import HistoryStatistics from '~/components/EventHistory/HistoryStatistics.vue';
 import HistoryList from '~/components/EventHistory/HistoryList.vue';
 import HistoryForm from '~/components/EventHistory/HistoryForm.vue';
+import EditEventModal from '~/components/EventForm/EditEventModal.vue';
 import type { HistoryFormData } from '~/components/EventHistory/HistoryForm.vue';
-import type { History } from '~~/app/types/eventHistory';
+import type { History, Event } from '~~/app/types/eventHistory';
 
 const route = useRoute();
 const router = useRouter();
@@ -282,13 +290,26 @@ const editFormData = ref<HistoryFormData>({ date: '', time: '', memo: '' });
 const editingHistory = ref<History | null>(null);
 const isEditingHistory = ref(false);
 
+// イベント編集用の状態
+const showEditEventModal = ref(false);
+
+// イベント編集モーダルを開く
+const openEditEventModal = () => {
+  showEditEventModal.value = true;
+};
+
+// イベント削除ダイアログを開く
+const openDeleteEventDialog = () => {
+  showDeleteDialog.value = true;
+};
+
 // メニュー項目
 const menuItems = computed(() => [
   [
     {
       label: '編集',
       icon: 'i-lucide-pencil',
-      onSelect: () => router.push(`/events/${eventId}/edit`),
+      onSelect: openEditEventModal,
     },
   ],
   [
@@ -296,7 +317,7 @@ const menuItems = computed(() => [
       label: '削除',
       icon: 'i-lucide-trash',
       color: 'error' as const,
-      onSelect: () => showDeleteDialog.value = true,
+      onSelect: openDeleteEventDialog,
     },
   ],
 ]);
@@ -403,6 +424,11 @@ const handleDeleteHistory = async () => {
 // イベント削除
 const handleDeleteEvent = async () => {
   await deleteEvent();
+};
+
+// イベント更新完了
+const handleEventUpdated = (updatedEvent: Event) => {
+  event.value = updatedEvent;
 };
 
 // 初回ロード
