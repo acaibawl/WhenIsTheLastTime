@@ -20,26 +20,20 @@
         </h1>
 
         <!-- ニックネーム -->
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-600 dark:text-gray-300 max-w-25 truncate">
-            👤 {{ userNickname }}
-          </span>
-
-          <!-- 検索アイコン -->
-          <button class="p-2 text-gray-600 dark:text-gray-300" @click="toggleSearch">
-            <UIcon name="i-lucide-search" class="w-5 h-5" />
-          </button>
-        </div>
+        <span class="text-sm text-gray-600 dark:text-gray-300 max-w-25 truncate">
+          👤 {{ userNickname }}
+        </span>
       </div>
 
       <!-- 検索バー -->
-      <div v-if="showSearch" class="border-t border-gray-200 dark:border-gray-700 px-4 py-2">
+      <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-2">
         <UInput
           v-model="searchQuery"
           placeholder="イベントを検索..."
           icon="i-lucide-search"
           :trailing="true"
           size="lg"
+          class="w-full"
         >
           <template #trailing>
             <UButton
@@ -145,7 +139,6 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const events = ref<Event[]>([]);
 const searchQuery = ref('');
-const showSearch = ref(false);
 const userNickname = ref('');
 const showCreateModal = ref(false);
 
@@ -161,13 +154,6 @@ const filteredEvents = computed(() => {
 });
 
 // メソッド
-const toggleSearch = () => {
-  showSearch.value = !showSearch.value;
-  if (!showSearch.value) {
-    searchQuery.value = '';
-  }
-};
-
 const clearSearch = () => {
   searchQuery.value = '';
 };
