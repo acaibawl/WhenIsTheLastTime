@@ -176,16 +176,10 @@ const handleConfirmCancel = () => {
 };
 
 // モーダルが開かれたときにイベントデータでフォームを初期化
-watch(() => props.modelValue, (newValue) => {
-  if (newValue && props.event) {
-    initializeWithEvent(props.event);
-  }
-});
-
 // イベントが変更されたときにフォームを再初期化
-watch(() => props.event, (newEvent) => {
-  if (newEvent && props.modelValue) {
-    initializeWithEvent(newEvent);
+watchEffect(() => {
+  if (props.modelValue && props.event) {
+    initializeWithEvent(props.event);
   }
 });
 </script>

@@ -109,7 +109,16 @@ export const useEventEditForm = (eventId: string | number) => {
 
         return response.data.event;
       } else {
-        throw new Error('イベントの更新に失敗しました');
+        const message = response.error?.message || 'イベントの更新に失敗しました';
+        errors.value.general = message;
+        const toast = useToast();
+        toast.add({
+          title: 'エラー',
+          description: message,
+          color: 'error',
+          icon: 'i-lucide-alert-circle',
+        });
+        return null;
       }
     } catch (error: any) {
       console.error('Failed to update event:', error);
