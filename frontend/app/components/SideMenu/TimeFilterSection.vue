@@ -60,16 +60,15 @@ import { useEventsStore } from '~/stores/events';
 interface TimeFilterOption {
   id: TimeFilterType;
   label: string;
-  description?: string;
 }
 
 const eventsStore = useEventsStore();
 
 const timeFilterOptions: TimeFilterOption[] = [
   { id: 'all', label: '全て' },
-  { id: 'weeks', label: '数週間前', description: '1週間以上前のものだけ含む' },
-  { id: 'months', label: '数ヶ月前', description: '1ヶ月以上前のものだけ含む' },
-  { id: 'years', label: '数年前', description: '1年以上前のものだけ含む' },
+  { id: 'weeks', label: '数週間前' },
+  { id: 'months', label: '数ヶ月前' },
+  { id: 'years', label: '数年前' },
 ];
 
 /**

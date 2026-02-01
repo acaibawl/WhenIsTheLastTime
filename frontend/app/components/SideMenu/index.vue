@@ -51,23 +51,10 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  nickname: string;
-}>();
 
 const isOpen = defineModel<boolean>({ default: false });
 
 const menuRef = ref<HTMLElement | null>(null);
-
-/**
- * ニックネームを最大20文字に切り詰め
- */
-const truncatedNickname = computed(() => {
-  if (props.nickname.length > 20) {
-    return `${props.nickname.slice(0, 20)}...`;
-  }
-  return props.nickname;
-});
 
 /**
  * メニューを閉じる

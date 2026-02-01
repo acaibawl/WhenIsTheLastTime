@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, startOfDay } from 'date-fns';
 import type { CategoryType } from '~/constants/categories';
 
 /**
@@ -59,23 +59,34 @@ export const useEventsStore = defineStore('events', () => {
   /**
    * フィルター統計情報を計算
    * 各時間フィルターに該当するイベント数を集計
+   * 時刻は無視して日付のみで比較
    */
   const filterStats = computed<FilterStats>(() => {
-    const now = new Date();
+    const today = startOfDay(new Date());
+    const stats = allEvents.value.reduce(
+      (acc, e) => {
+        if (!e.lastExecutedAt) {
+          return acc;
+        }
+        const eventDate = startOfDay(new Date(e.lastExecutedAt));
+        const days = differenceInDays(today, eventDate);
+        if (days >= 7) {
+          acc.weeks++;
+        }
+        if (days >= 30) {
+          acc.months++;
+        }
+        if (days >= 365) {
+          acc.years++;
+        }
+        return acc;
+      },
+      { weeks: 0, months: 0, years: 0 },
+    );
+
     return {
       all: allEvents.value.length,
-      weeks: allEvents.value.filter((e) => {
-        if (!e.lastExecutedAt) return false;
-        return differenceInDays(now, new Date(e.lastExecutedAt)) >= 7;
-      }).length,
-      months: allEvents.value.filter((e) => {
-        if (!e.lastExecutedAt) return false;
-        return differenceInDays(now, new Date(e.lastExecutedAt)) >= 30;
-      }).length,
-      years: allEvents.value.filter((e) => {
-        if (!e.lastExecutedAt) return false;
-        return differenceInDays(now, new Date(e.lastExecutedAt)) >= 365;
-      }).length,
+      ...stats,
     };
   });
 
@@ -85,9 +96,9 @@ export const useEventsStore = defineStore('events', () => {
   const filteredEvents = computed<Event[]>(() => {
     let events = allEvents.value;
 
-    // 時間フィルター適用
+    // 時間フィルター適用（時刻は無視して日付のみで比較）
     if (timeFilter.value !== 'all') {
-      const now = new Date();
+      const today = startOfDay(new Date());
       const daysMap: Record<Exclude<TimeFilterType, 'all'>, number> = {
         weeks: 7,
         months: 30,
@@ -97,7 +108,8 @@ export const useEventsStore = defineStore('events', () => {
 
       events = events.filter((e) => {
         if (!e.lastExecutedAt) return false;
-        return differenceInDays(now, new Date(e.lastExecutedAt)) >= days;
+        const eventDate = startOfDay(new Date(e.lastExecutedAt));
+        return differenceInDays(today, eventDate) >= days;
       });
     }
 
@@ -142,12 +154,10 @@ export const useEventsStore = defineStore('events', () => {
 
       if (response.success) {
         allEvents.value = response.data.events || [];
-      }
-      else {
+      } else {
         throw new Error('イベントの取得に失敗しました');
       }
-    }
-    catch (err: any) {
+    } catch (err: any) {
       console.error('Failed to fetch events:', err);
 
       // 401エラーの場合はログイン画面へ
@@ -158,8 +168,7 @@ export const useEventsStore = defineStore('events', () => {
       }
 
       error.value = 'イベントの読み込みに失敗しました';
-    }
-    finally {
+    } finally {
       loading.value = false;
     }
   };
@@ -182,17 +191,9 @@ export const useEventsStore = defineStore('events', () => {
     const index = selectedCategories.value.indexOf(category);
     if (index > -1) {
       selectedCategories.value.splice(index, 1);
-    }
-    else {
+    } else {
       selectedCategories.value.push(category);
     }
-  };
-
-  /**
-   * 検索クエリを設定
-   */
-  const setSearchQuery = (query: string) => {
-    searchQuery.value = query;
   };
 
   /**
@@ -200,6 +201,13 @@ export const useEventsStore = defineStore('events', () => {
    */
   const clearSearchQuery = () => {
     searchQuery.value = '';
+  };
+
+  /**
+   * カテゴリーフィルターをクリア
+   */
+  const clearCategories = () => {
+    selectedCategories.value = [];
   };
 
   /**
@@ -225,8 +233,8 @@ export const useEventsStore = defineStore('events', () => {
     fetchEvents,
     setTimeFilter,
     toggleCategory,
-    setSearchQuery,
     clearSearchQuery,
+    clearCategories,
     clearFilters,
   };
 });

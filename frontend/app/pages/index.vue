@@ -252,8 +252,7 @@ const fetchUserInfo = async () => {
     if (response.success && response.data.user) {
       userNickname.value = response.data.user.nickname;
     }
-  }
-  catch (err) {
+  } catch (err) {
     console.error('Failed to fetch user info:', err);
   }
 };

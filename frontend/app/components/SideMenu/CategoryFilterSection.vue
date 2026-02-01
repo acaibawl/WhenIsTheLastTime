@@ -74,6 +74,6 @@ const toggleCategory = (categoryId: CategoryType) => {
  * カテゴリー選択をクリア
  */
 const clearCategories = () => {
-  eventsStore.selectedCategories = [];
+  eventsStore.clearCategories();
 };
 </script>
