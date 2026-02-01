@@ -1,8 +1,7 @@
 <template>
   <div>
     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-      カテゴリー
-      <span class="text-red-500">*</span>
+      <span class="required">カテゴリー</span>
     </label>
     <div
       role="radiogroup"

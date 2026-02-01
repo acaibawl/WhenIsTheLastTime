@@ -142,12 +142,12 @@ export const useEventForm = () => {
         return false;
       }
 
-      errors.value.general = error.data?.error?.message || 'イベントの作成に失敗しました';
+      errors.value.general = error.data?.message || error.data?.error?.message || error.message || 'イベントの作成に失敗しました';
 
       // トースト通知
       const toast = useToast();
       toast.add({
-        title: 'エラー',
+        title: 'イベントの作成に失敗しました',
         description: errors.value.general,
         color: 'error',
         icon: 'i-lucide-alert-circle',

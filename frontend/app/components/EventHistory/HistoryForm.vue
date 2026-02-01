@@ -3,7 +3,7 @@
     <!-- 日付入力 -->
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-        日付 <span class="text-red-500">*</span>
+        <span class="required">日付</span>
       </label>
       <input
         v-model="formDate"
@@ -16,7 +16,7 @@
     <!-- 時刻入力 -->
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-        時刻 <span class="text-red-500">*</span>
+        <span class="required">時刻</span>
       </label>
       <input
         v-model="formTime"
