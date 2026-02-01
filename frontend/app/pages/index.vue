@@ -1,5 +1,8 @@
 <template>
   <div>
+    <!-- サイドメニュー -->
+    <SideMenu v-model="showSideMenu" :nickname="userNickname" />
+
     <!-- イベント作成モーダル（Teleportで body に配置） -->
     <Teleport to="body">
       <CreateEventModal v-if="showCreateModal" v-model="showCreateModal" @created="handleEventCreated" />
@@ -7,10 +10,14 @@
 
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
       <!-- ヘッダー -->
-      <header class="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <header class="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-        <!-- ハンバーガーメニュー（将来実装） -->
-        <button class="p-2 text-gray-600 dark:text-gray-300">
+        <!-- ハンバーガーメニュー -->
+        <button
+          class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          aria-label="メニューを開く"
+          @click="openSideMenu"
+        >
           <UIcon name="i-lucide-menu" class="w-6 h-6" />
         </button>
 
@@ -28,7 +35,7 @@
       <!-- 検索バー -->
       <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-2">
         <UInput
-          v-model="searchQuery"
+          v-model="eventsStore.searchQuery"
           placeholder="イベントを検索..."
           icon="i-lucide-search"
           :trailing="true"
@@ -37,49 +44,68 @@
         >
           <template #trailing>
             <UButton
-              v-if="searchQuery"
+              v-if="eventsStore.searchQuery"
               color="neutral"
               variant="link"
               icon="i-lucide-x"
               size="xs"
-              @click="clearSearch"
+              @click="eventsStore.clearSearchQuery()"
             />
           </template>
         </UInput>
+      </div>
+
+      <!-- アクティブフィルター表示 -->
+      <div
+        v-if="hasActiveFilters"
+        class="border-t border-gray-200 dark:border-gray-700 px-4 py-2 bg-blue-50 dark:bg-blue-900/20"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-blue-700 dark:text-blue-300">
+            フィルター適用中: {{ eventsStore.filteredEvents.length }}件
+          </span>
+          <button
+            type="button"
+            class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            @click="eventsStore.clearFilters()"
+          >
+            クリア
+          </button>
+        </div>
       </div>
     </header>
 
     <!-- メインコンテンツ -->
     <main class="container mx-auto px-4 py-6 pb-24">
       <!-- ローディング状態 -->
-      <div v-if="loading" class="flex justify-center items-center py-12">
+      <div v-if="eventsStore.loading" class="flex justify-center items-center py-12">
         <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-blue-500" />
       </div>
 
       <!-- エラー状態 -->
-      <div v-else-if="error" class="text-center py-12">
+      <div v-else-if="eventsStore.error" class="text-center py-12">
         <UIcon name="i-lucide-alert-circle" class="w-12 h-12 mx-auto text-red-500 mb-4" />
         <p class="text-gray-600 dark:text-gray-400 mb-4">
-          {{ error }}
+          {{ eventsStore.error }}
         </p>
-        <UButton @click="fetchEvents">再読み込み</UButton>
+        <UButton @click="eventsStore.fetchEvents()">再読み込み</UButton>
       </div>
 
       <!-- 空の状態 -->
-      <div v-else-if="filteredEvents.length === 0" class="text-center py-12">
+      <div v-else-if="eventsStore.filteredEvents.length === 0" class="text-center py-12">
         <UIcon name="i-lucide-file-text" class="w-16 h-16 mx-auto text-gray-400 mb-4" />
         <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {{ searchQuery ? '該当するイベントがありません' : 'イベントがありません' }}
+          {{ eventsStore.searchQuery || hasActiveFilters ? '該当するイベントがありません' : 'イベントがありません' }}
         </h2>
         <p class="text-gray-500 dark:text-gray-400 mb-6">
-          {{ searchQuery ? '別のキーワードで検索してみてください' : '「+」ボタンから最初のイベントを追加しましょう' }}
+          {{ eventsStore.searchQuery || hasActiveFilters ? '別の条件で検索してみてください' : '「+」ボタンから最初のイベントを追加しましょう' }}
         </p>
       </div>
 
       <!-- イベント一覧 -->
       <div v-else class="space-y-3">
         <NuxtLink
-          v-for="event in filteredEvents"
+          v-for="event in eventsStore.filteredEvents"
           :key="event.id"
           :to="`/events/${event.id}/history`"
           class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
@@ -122,77 +148,29 @@
 
 <script setup lang="ts">
 import { differenceInDays, intervalToDuration } from 'date-fns';
-import type { CategoryType } from '~/constants/categories';
 import { getCategoryIcon } from '~/constants/categories';
 import CreateEventModal from '~/components/EventForm/CreateEventModal.vue';
+import SideMenu from '~/components/SideMenu/index.vue';
+import { useEventsStore } from '~/stores/events';
 
-interface Event {
-  id: number;
-  name: string;
-  categoryIcon: CategoryType;
-  lastExecutedAt: string | null;
-  lastExecutedMemo: string | null;
-}
+// Pinia Store
+const eventsStore = useEventsStore();
 
 // リアクティブステート
-const loading = ref(true);
-const error = ref<string | null>(null);
-const events = ref<Event[]>([]);
-const searchQuery = ref('');
 const userNickname = ref('');
 const showCreateModal = ref(false);
+const showSideMenu = ref(false);
 
-// 計算プロパティ
-const filteredEvents = computed(() => {
-  if (!searchQuery.value) return events.value;
-
-  const query = searchQuery.value.toLowerCase();
-  return events.value.filter(event =>
-    event.name.toLowerCase().includes(query)
-    || (event.lastExecutedMemo && event.lastExecutedMemo.toLowerCase().includes(query)),
-  );
+/**
+ * アクティブなフィルターがあるかどうか
+ */
+const hasActiveFilters = computed(() => {
+  return eventsStore.timeFilter !== 'all' || eventsStore.selectedCategories.length > 0;
 });
 
 // メソッド
-const clearSearch = () => {
-  searchQuery.value = '';
-};
-
-const fetchEvents = async () => {
-  loading.value = true;
-  error.value = null;
-  const token = useCookie('access_token');
-
-  try {
-    const config = useRuntimeConfig();
-
-    // イベント一覧取得
-    const response = await $fetch<any>('/events', {
-      baseURL: config.public.apiBaseUrl,
-      headers: {
-        Authorization: `Bearer ${token.value}`,
-      },
-    });
-
-    if (response.success) {
-      events.value = response.data.events || [];
-    } else {
-      throw new Error('イベントの取得に失敗しました');
-    }
-  } catch (err: any) {
-    console.error('Failed to fetch events:', err);
-
-    // 401エラーの場合はログイン画面へ
-    if (err.status === 401 || err.statusCode === 401) {
-      token.value = null;
-      await navigateTo('/login');
-      return;
-    }
-
-    error.value = 'イベントの読み込みに失敗しました';
-  } finally {
-    loading.value = false;
-  }
+const openSideMenu = () => {
+  showSideMenu.value = true;
 };
 
 const calculateElapsedDays = (lastExecutedAt: string | null): number | null => {
@@ -257,7 +235,7 @@ const openCreateModal = () => {
 
 const handleEventCreated = async () => {
   // イベント作成後、一覧を再取得
-  await fetchEvents();
+  await eventsStore.fetchEvents();
 };
 
 const fetchUserInfo = async () => {
@@ -274,13 +252,14 @@ const fetchUserInfo = async () => {
     if (response.success && response.data.user) {
       userNickname.value = response.data.user.nickname;
     }
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to fetch user info:', err);
   }
 };
 
 await Promise.all([
   fetchUserInfo(),
-  fetchEvents(),
+  eventsStore.fetchEvents(),
 ]);
 </script>
