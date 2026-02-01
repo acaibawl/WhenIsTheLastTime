@@ -50,8 +50,7 @@
                 <!-- 初回実行日時 -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    初回実行日時
-                    <span class="text-red-500">*</span>
+                    <span class="required">初回実行日時</span>
                     </label>
 
                     <div class="space-y-3">
