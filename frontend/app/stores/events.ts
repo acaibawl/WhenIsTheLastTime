@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { differenceInDays, startOfDay } from 'date-fns';
 import type { CategoryType } from '~/constants/categories';
+import { useSettingsStore, type SortOrder } from '~/stores/settings';
 
 /**
  * 時間フィルターの種類
@@ -128,6 +129,37 @@ export const useEventsStore = defineStore('events', () => {
         || (event.lastExecutedMemo && event.lastExecutedMemo.toLowerCase().includes(query)),
       );
     }
+
+    // ソート適用（設定画面のソート順に従う）
+    const settingsStore = useSettingsStore();
+    const sortOrder: SortOrder = settingsStore.localSettings.display.sortOrder;
+
+    events = [...events].sort((a, b) => {
+      switch (sortOrder) {
+        case 'alphabetical':
+          // アルファベット順（日本語対応のためlocaleCompareを使用）
+          return a.name.localeCompare(b.name, 'ja');
+
+        case 'date_desc':
+          // 日時降順（最新が上）
+          // lastExecutedAtがnullのものは後ろに配置
+          if (!a.lastExecutedAt && !b.lastExecutedAt) return 0;
+          if (!a.lastExecutedAt) return 1;
+          if (!b.lastExecutedAt) return -1;
+          return new Date(b.lastExecutedAt).getTime() - new Date(a.lastExecutedAt).getTime();
+
+        case 'date_asc':
+          // 日時昇順（古いものが上）
+          // lastExecutedAtがnullのものは後ろに配置
+          if (!a.lastExecutedAt && !b.lastExecutedAt) return 0;
+          if (!a.lastExecutedAt) return 1;
+          if (!b.lastExecutedAt) return -1;
+          return new Date(a.lastExecutedAt).getTime() - new Date(b.lastExecutedAt).getTime();
+
+        default:
+          return 0;
+      }
+    });
 
     return events;
   });

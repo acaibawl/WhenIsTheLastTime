@@ -18,7 +18,7 @@
         </h1>
 
         <!-- 右側のスペーサー -->
-        <div class="w-10"></div>
+        <div class="w-10" />
       </div>
     </header>
 
