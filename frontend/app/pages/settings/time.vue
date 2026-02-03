@@ -23,10 +23,11 @@
     </header>
 
     <main class="container mx-auto max-w-3xl">
-      <div class="bg-white dark:bg-gray-800 mt-4 rounded-lg overflow-hidden">
+      <div class="bg-white dark:bg-gray-800 mt-4 pl-5 rounded-lg overflow-hidden">
         <URadioGroup
           v-model="selectedTimeOrigin"
           :items="timeOriginOptions"
+          :ui="{ item: 'items-center' }"
           class="divide-y divide-gray-200 dark:divide-gray-700"
         >
           <template #label="{ item }">
@@ -35,10 +36,10 @@
                 {{ item.label }}
               </div>
               <div
-                v-if="item.description"
+                v-if="item.descriptionLabel"
                 class="text-sm text-gray-500 dark:text-gray-400 mt-1"
               >
-                {{ item.description }}
+                {{ item.descriptionLabel }}
               </div>
             </div>
           </template>
@@ -58,12 +59,12 @@ const timeOriginOptions = [
   {
     value: 'midnight',
     label: '真夜中を起点とする',
-    description: '午前0時に日付が変わる',
+    descriptionLabel: '午前0時に日付が変わる',
   },
   {
     value: '24hours',
     label: '24時間ごと（準備中）',
-    description: '記録時刻から24時間後',
+    descriptionLabel: '記録時刻から24時間後',
     disabled: true,
   },
 ];

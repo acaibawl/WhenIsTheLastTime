@@ -4,21 +4,21 @@
     <header class="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="container mx-auto px-4 py-3 flex items-center justify-between">
         <!-- 戻るボタン -->
-        <button
+        <NuxtLink
+          to="/"
           class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           aria-label="戻る"
-          @click="navigateBack"
         >
           <UIcon name="i-lucide-arrow-left" class="w-6 h-6" />
-        </button>
+        </NuxtLink>
 
         <!-- タイトル -->
         <h1 class="text-lg font-semibold text-gray-900 dark:text-white flex-1 text-center">
           設定
         </h1>
 
-        <!-- 右側のスペーサー -->
-        <div class="w-10" />
+        <!-- ダークモード切り替えボタン -->
+        <UColorModeButton class="p-2" />
       </div>
     </header>
 
@@ -52,12 +52,12 @@
           <SettingItem
             label="ソート順"
             :value="sortOrderLabel"
-            @click="navigateTo('/settings/sort')"
+            to="/settings/sort"
           />
           <SettingItem
             label="時間設定"
             :value="timeOriginLabel"
-            @click="navigateTo('/settings/time')"
+            to="/settings/time"
           />
           <SettingToggle
             label="タイムフリッパー"
@@ -72,7 +72,7 @@
           <SettingItem
             label="リマインダー"
             description="※この機能は準備中です"
-            @click="navigateTo('/settings/reminder')"
+            to="/settings/reminder"
           />
         </SettingSection>
 
@@ -95,11 +95,11 @@
           />
           <SettingItem
             label="利用規約"
-            @click="navigateTo('/terms')"
+            to="/terms"
           />
           <SettingItem
             label="プライバシーポリシー"
-            @click="navigateTo('/privacy')"
+            to="/privacy"
           />
         </SettingSection>
       </div>
@@ -144,7 +144,6 @@ import SettingSection from '~/components/Settings/SettingSection.vue';
 import SettingItem from '~/components/Settings/SettingItem.vue';
 import SettingToggle from '~/components/Settings/SettingToggle.vue';
 
-const router = useRouter();
 const toast = useToast();
 const settingsStore = useSettingsStore();
 
@@ -172,10 +171,6 @@ const timeOriginLabel = computed(() => {
 });
 
 // Methods
-const navigateBack = () => {
-  router.back();
-};
-
 const handleExportClick = () => {
   showExportModal.value = true;
 };
@@ -253,8 +248,5 @@ const handleToggleTutorial = async () => {
   }
 };
 
-// 初期化
-onMounted(() => {
-  settingsStore.loadAllSettings();
-});
+settingsStore.loadAllSettings();
 </script>

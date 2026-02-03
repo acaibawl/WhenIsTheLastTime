@@ -27,8 +27,9 @@
         </h1>
 
         <!-- ニックネーム -->
-        <span class="text-sm text-gray-600 dark:text-gray-300 max-w-25 truncate">
-          👤 {{ userNickname }}
+        <span class="text-sm text-gray-600 dark:text-gray-300 max-w-25 truncate flex items-center gap-1">
+          <UIcon name="i-lucide-user" class="w-4 h-4" />
+          {{ userNickname }}
         </span>
       </div>
 
