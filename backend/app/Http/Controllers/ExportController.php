@@ -48,17 +48,17 @@ class ExportController extends Controller
                 'Created at',
             ]);
 
-            // ユーザーのすべてのイベントを取得
+            // ユーザーのすべてのイベントと、それに紐づく履歴をソートして取得
             $events = $user->events()
-                ->with('histories')
+                ->with(['histories' => function ($query) {
+                    $query->orderBy('executed_at', 'asc');
+                }])
                 ->orderBy('created_at', 'asc')
                 ->get();
 
             foreach ($events as $event) {
                 // イベントに履歴がある場合、履歴ごとに行を出力
-                $histories = $event->histories()
-                    ->orderBy('executed_at', 'asc')
-                    ->get();
+                $histories = $event->histories;
 
                 if ($histories->isEmpty()) {
                     // 履歴がないイベントは空のメモで出力

@@ -194,7 +194,7 @@ const handleExport = async () => {
       throw new Error('Export failed');
     }
 
-    // BlobとしてレスポンスをRェし
+    // Blobとしてレスポンスを取得
     const blob = await response.blob();
 
     // ファイル名をContent-Dispositionヘッダーから取得
