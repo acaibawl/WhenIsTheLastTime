@@ -88,7 +88,14 @@ const emit = defineEmits<{
 
 // メニュー項目を生成
 const getMenuItems = (history: History) => {
-  const items = [
+  type MenuItem = {
+    label: string;
+    icon: string;
+    color?: 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral';
+    onSelect: () => void;
+  };
+
+  const items: MenuItem[][] = [
     [
       {
         label: '編集',
@@ -104,7 +111,7 @@ const getMenuItems = (history: History) => {
       {
         label: '削除',
         icon: 'i-lucide-trash',
-        color: 'error' as const,
+        color: 'error',
         onSelect: () => emit('delete', history),
       },
     ]);

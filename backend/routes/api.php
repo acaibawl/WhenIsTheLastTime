@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\SettingController;
@@ -63,5 +64,8 @@ Route::middleware('api')->group(function () {
         // Settings API
         Route::get('/settings', [SettingController::class, 'show'])->name('settings.show');
         Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+        // Export API
+        Route::get('/export/csv', [ExportController::class, 'exportCsv'])->name('export.csv');
     });
 });
