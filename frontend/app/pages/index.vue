@@ -178,9 +178,11 @@ let timerInterval: ReturnType<typeof setInterval> | null = null;
  */
 const hasEventsWithin24Hours = computed(() => {
   if (!useTimeFlipper.value) return false;
+
+  const now = new Date();
   return eventsStore.filteredEvents.some((event) => {
     if (!event.lastExecutedAt) return false;
-    const hours = differenceInHours(new Date(), new Date(event.lastExecutedAt));
+    const hours = differenceInHours(now, new Date(event.lastExecutedAt));
     return hours < 24;
   });
 });
