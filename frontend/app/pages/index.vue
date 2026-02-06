@@ -148,19 +148,74 @@
 </template>
 
 <script setup lang="ts">
-import { differenceInDays, intervalToDuration } from 'date-fns';
+import { differenceInDays, differenceInHours, intervalToDuration } from 'date-fns';
 import { getCategoryIcon } from '~/constants/categories';
 import CreateEventModal from '~/components/EventForm/CreateEventModal.vue';
 import SideMenu from '~/components/SideMenu/index.vue';
 import { useEventsStore } from '~/stores/events';
+import { useSettingsStore } from '~/stores/settings';
 
 // Pinia Store
 const eventsStore = useEventsStore();
+const settingsStore = useSettingsStore();
+
+// リアルタイム更新用
+const currentTime = ref(Date.now());
 
 // リアクティブステート
 const userNickname = ref('');
 const showCreateModal = ref(false);
 const showSideMenu = ref(false);
+
+// タイムフリッパー設定
+const useTimeFlipper = computed(() => settingsStore.localSettings.display.useTimeFlipper);
+
+// リアルタイム更新用タイマー
+let timerInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * 1日以内のイベントがあるかどうか
+ */
+const hasEventsWithin24Hours = computed(() => {
+  if (!useTimeFlipper.value) return false;
+
+  const now = new Date();
+  return eventsStore.filteredEvents.some((event) => {
+    if (!event.lastExecutedAt) return false;
+    const hours = differenceInHours(now, new Date(event.lastExecutedAt));
+    return hours < 24;
+  });
+});
+
+/**
+ * タイマーを開始/停止
+ */
+const updateTimer = () => {
+  // 既存のタイマーをクリア
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  // タイムフリッパー有効かつ24時間以内のイベントがある場合のみタイマー開始
+  if (hasEventsWithin24Hours.value) {
+    timerInterval = setInterval(() => {
+      currentTime.value = Date.now();
+    }, 1000);
+  }
+};
+
+// タイムフリッパー設定や24時間以内イベントの変更を監視
+watch([useTimeFlipper, hasEventsWithin24Hours], () => {
+  updateTimer();
+}, { immediate: true });
+
+// コンポーネント破棄時にタイマーをクリア
+onUnmounted(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+});
 
 /**
  * アクティブなフィルターがあるかどうか
@@ -179,11 +234,33 @@ const calculateElapsedDays = (lastExecutedAt: string | null): number | null => {
   return differenceInDays(new Date(), new Date(lastExecutedAt));
 };
 
+/**
+ * 経過時間をフォーマット
+ * タイムフリッパー有効時は24時間以内のイベントを時分秒で表示
+ */
 const formatElapsedTime = (lastExecutedAt: string | null): string => {
   if (!lastExecutedAt) return '記録なし';
 
   const lastDate = new Date(lastExecutedAt);
-  const now = new Date();
+  // currentTime.value を参照してリアクティブにする
+  const now = new Date(currentTime.value);
+
+  // タイムフリッパー有効時、24時間以内なら時分秒表示
+  if (useTimeFlipper.value) {
+    const hours = differenceInHours(now, lastDate);
+    if (hours < 24) {
+      const duration = intervalToDuration({
+        start: lastDate,
+        end: now,
+      });
+
+      const h = duration.hours || 0;
+      const m = duration.minutes || 0;
+      const s = duration.seconds || 0;
+
+      return `${h}時間 ${m}分 ${s}秒`;
+    }
+  }
 
   const duration = intervalToDuration({
     start: lastDate,
@@ -257,6 +334,9 @@ const fetchUserInfo = async () => {
     console.error('Failed to fetch user info:', err);
   }
 };
+
+// ローカル設定を読み込み
+settingsStore.loadLocalSettings();
 
 await Promise.all([
   fetchUserInfo(),
