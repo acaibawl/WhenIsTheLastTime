@@ -18,15 +18,23 @@ export default defineNuxtConfig({
     '~/assets/css/main.css',
   ],
 
-  routeRules: {
-    '/': { prerender: true },
-  },
-
   compatibilityDate: '2025-01-15',
 
   vite: {
     server: {
       allowedHosts: ['frontend.local'],
     },
+  },
+
+  nitro: {
+    preset: 'aws-lambda',
+    serveStatic: true,
+    publicAssets: [
+      {
+        baseURL: '/',
+        dir: 'public',
+        maxAge: 31536000,
+      },
+    ],
   },
 });

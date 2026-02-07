@@ -29,6 +29,7 @@
     "@stylistic/eslint-plugin": "^5.7.1",
     "@types/node": "^25.1.0",
     "eslint": "^9.39.2",
+    "serverless": "^4.31.2",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.1"
   }
