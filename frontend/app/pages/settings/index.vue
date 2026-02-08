@@ -80,7 +80,7 @@
         <SettingSection title="その他">
           <SettingToggle
             label="チュートリアル"
-            description="※この機能は準備中です"
+            description="次回起動時にチュートリアルを表示"
             :model-value="settingsStore.serverSettings.misc.showTutorial"
             @update:model-value="handleToggleTutorial"
           />
