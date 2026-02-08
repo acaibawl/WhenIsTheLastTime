@@ -6,8 +6,8 @@ export default defineNuxtRouteMiddleware((to) => {
   // アクセストークンの確認
   const token = useCookie('access_token');
 
-  // 認証不要なページ（ログイン、会員登録など）
-  const publicPages = ['/login', '/member-register', '/health'];
+  // 認証不要なページ（ログイン、会員登録、ソーシャル認証コールバックなど）
+  const publicPages = ['/login', '/member-register', '/health', '/auth/social'];
   const isPublicPage = publicPages.some(page => to.path.startsWith(page));
 
   // 公開ページの場合はスキップ

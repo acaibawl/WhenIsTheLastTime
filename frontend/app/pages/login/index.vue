@@ -16,6 +16,15 @@ const generalError = ref('');
 // ローディング状態
 const isLoading = ref(false);
 
+// ソーシャル認証ローディング状態
+const isSocialLoading = ref(false);
+
+// URLクエリからソーシャル認証エラーを取得
+const route = useRoute();
+if (route.query.error === 'social_auth_failed') {
+  generalError.value = 'X（Twitter）認証に失敗しました。もう一度お試しください。';
+}
+
 // バリデーションスキーマ
 const schema = yup.object({
   email: yup
@@ -96,6 +105,13 @@ const onSubmit = handleSubmit(async (values) => {
     isLoading.value = false;
   }
 });
+
+// X（Twitter）認証
+const loginWithTwitter = () => {
+  isSocialLoading.value = true;
+  const config = useRuntimeConfig();
+  window.location.href = `${config.public.apiBaseUrl}/auth/social/twitter/redirect`;
+};
 </script>
 
 <template>
@@ -175,11 +191,37 @@ const onSubmit = handleSubmit(async (values) => {
             block
             size="xl"
             :loading="isLoading"
-            :disabled="isLoading"
+            :disabled="isLoading || isSocialLoading"
           >
             ログイン
           </UButton>
         </form>
+
+        <!-- ソーシャルログイン区切り線 -->
+        <div class="relative my-8">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300 dark:border-gray-700" />
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white dark:bg-gray-900 text-gray-500">
+              または
+            </span>
+          </div>
+        </div>
+
+        <!-- X（Twitter）ログインボタン -->
+        <UButton
+          block
+          size="xl"
+          color="neutral"
+          variant="outline"
+          icon="i-simple-icons-x"
+          :loading="isSocialLoading"
+          :disabled="isLoading || isSocialLoading"
+          @click="loginWithTwitter"
+        >
+          X（Twitter）でログイン
+        </UButton>
 
         <!-- 区切り線 -->
         <div class="relative my-8">

@@ -17,6 +17,9 @@ const generalError = ref('');
 // ローディング状態
 const isLoading = ref(false);
 
+// ソーシャル認証ローディング状態
+const isSocialLoading = ref(false);
+
 // バリデーションスキーマ
 const schema = yup.object({
   email: yup
@@ -105,6 +108,13 @@ const onSubmit = handleSubmit(async (values) => {
     isLoading.value = false;
   }
 });
+
+// X（Twitter）認証
+const registerWithTwitter = () => {
+  isSocialLoading.value = true;
+  const config = useRuntimeConfig();
+  window.location.href = `${config.public.apiBaseUrl}/auth/social/twitter/redirect`;
+};
 </script>
 
 <template>
@@ -247,12 +257,38 @@ const onSubmit = handleSubmit(async (values) => {
               block
               size="lg"
               :loading="isLoading"
-              :disabled="isLoading"
+              :disabled="isLoading || isSocialLoading"
             >
               認証コードを送信
             </UButton>
           </div>
         </form>
+
+        <!-- ソーシャル認証区切り線 -->
+        <div class="relative my-8">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300" />
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500">
+              または
+            </span>
+          </div>
+        </div>
+
+        <!-- X（Twitter）で登録ボタン -->
+        <UButton
+          block
+          size="lg"
+          color="neutral"
+          variant="outline"
+          icon="i-simple-icons-x"
+          :loading="isSocialLoading"
+          :disabled="isLoading || isSocialLoading"
+          @click="registerWithTwitter"
+        >
+          X（Twitter）で登録
+        </UButton>
 
         <!-- ログインリンク -->
         <div class="mt-6 text-center">

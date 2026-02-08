@@ -1,0 +1,198 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "NuxtLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/witlt-frontend-dev-nuxt"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "witlt-frontend",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup",
+                    "logs:TagResource"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/witlt-frontend-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/witlt-frontend-dev*:*:*"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "witlt-frontend",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "NuxtLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "nuxt-app-serverless",
+          "S3Key": "serverless/witlt-frontend/dev/1770533756787-2026-02-08T06:55:56.787Z/witlt-frontend.zip"
+        },
+        "Handler": ".output/server/index.handler",
+        "Runtime": "nodejs22.x",
+        "FunctionName": "witlt-frontend-dev-nuxt",
+        "MemorySize": 1024,
+        "Timeout": 10,
+        "Environment": {
+          "Variables": {
+            "NUXT_PUBLIC_API_BASE_URL": "https://di2o7f7wgpl5x4laghipfil7eu0chkay.lambda-url.ap-northeast-1.on.aws",
+            "NUXT_PUBLIC_BASE_URL": "https://when-is-the-last-time.com"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "NuxtLogGroup"
+      ]
+    },
+    "NuxtLambdaVersionfur1pu2h1SkapIADqLculDiJRFklecTzX7RitjykKI": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "NuxtLambdaFunction"
+        },
+        "CodeSha256": "KZFFs6NOnbhCoH01E8hU12o+vxPvB1t12LNyn1xWe54="
+      }
+    },
+    "NuxtLambdaFunctionUrl": {
+      "Type": "AWS::Lambda::Url",
+      "Properties": {
+        "AuthType": "NONE",
+        "TargetFunctionArn": {
+          "Fn::GetAtt": [
+            "NuxtLambdaFunction",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "NuxtLambdaPermissionFnUrl": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "NuxtLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunctionUrl",
+        "Principal": "*",
+        "FunctionUrlAuthType": "NONE"
+      }
+    },
+    "NuxtLambdaPermissionFnUrlInvokeFunction": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "NuxtLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "*",
+        "InvokedViaFunctionUrl": true
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": "nuxt-app-serverless",
+      "Export": {
+        "Name": "sls-witlt-frontend-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "NuxtLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "NuxtLambdaVersionfur1pu2h1SkapIADqLculDiJRFklecTzX7RitjykKI"
+      },
+      "Export": {
+        "Name": "sls-witlt-frontend-dev-NuxtLambdaFunctionQualifiedArn"
+      }
+    },
+    "NuxtLambdaFunctionUrl": {
+      "Description": "Lambda Function URL",
+      "Value": {
+        "Fn::GetAtt": [
+          "NuxtLambdaFunctionUrl",
+          "FunctionUrl"
+        ]
+      },
+      "Export": {
+        "Name": "sls-witlt-frontend-dev-NuxtLambdaFunctionUrl"
+      }
+    }
+  }
+}
