@@ -1,0 +1,28 @@
+service: witlt-frontend
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  stage: ${opt:stage, 'dev'}
+  region: ap-northeast-1
+  runtime: nodejs22.x
+  memorySize: 1024
+  timeout: 10
+  deploymentBucket:
+    name: nuxt-app-serverless
+    serverSideEncryption: AES256
+  environment:
+    # Nuxt runtimeConfig の環境変数
+    NUXT_PUBLIC_API_BASE_URL: ${env:NUXT_PUBLIC_API_BASE_URL, ''}
+    NUXT_PUBLIC_BASE_URL: ${env:NUXT_PUBLIC_BASE_URL, ''}
+
+package:
+  patterns:
+    - "!**"
+    - ".output/server/**"
+    - ".output/public/**"
+
+functions:
+  nuxt:
+    handler: ".output/server/index.handler"
+    url: true

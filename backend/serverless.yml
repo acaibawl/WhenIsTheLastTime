@@ -1,0 +1,122 @@
+service: witlt-backend
+frameworkVersion: "4"
+
+useDotenv: true
+
+provider:
+  name: aws
+  stage: ${opt:stage, 'dev'}
+  region: ap-northeast-1
+  # コスト削減: ARM (Graviton2) を使用
+  architecture: arm64
+  environment:
+    # アプリケーション基本設定
+    APP_NAME: "WhenIsTheLastTime"
+    APP_ENV: production
+    APP_DEBUG: false
+    APP_TIMEZONE: Asia/Tokyo
+    APP_URL: ${env:APP_URL}
+    APP_KEY: ${env:APP_KEY}
+    APP_LOCALE: ja
+    APP_FALLBACK_LOCALE: en
+    APP_FAKER_LOCALE: ja_JP
+    # フロントエンド URL (CORS 用)
+    FRONTEND_URL: ${env:FRONTEND_URL}
+    # 暗号化
+    BCRYPT_ROUNDS: ${env:BCRYPT_ROUNDS, '12'}
+    # データベース設定
+    DB_CONNECTION: mysql
+    DB_HOST: ${env:DB_HOST}
+    DB_PORT: ${env:DB_PORT, '3306'}
+    DB_DATABASE: ${env:DB_DATABASE}
+    DB_USERNAME: ${env:DB_USERNAME}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    # Redis クライアント（Bref には PhpRedis 拡張がないため Predis を使用）
+    REDIS_CLIENT: predis
+    REDIS_HOST: ${env:REDIS_HOST}
+    REDIS_PORT: ${env:REDIS_PORT, '6379'}
+    REDIS_PASSWORD: ${env:REDIS_PASSWORD, ''}
+    REDIS_SCHEME: ${env:REDIS_SCHEME, 'tls'}
+    # キャッシュ・セッション（Lambda ではファイルシステムが読み取り専用のため DB を使用）
+    CACHE_STORE: database
+    SESSION_DRIVER: cookie
+    SESSION_LIFETIME: ${env:SESSION_LIFETIME, '120'}
+    # キュー
+    QUEUE_CONNECTION: database
+    FILESYSTEM_DISK: ${env:FILESYSTEM_DISK, 's3'}
+    # ログ（Bref が自動的に stderr に設定するが明示的に指定）
+    LOG_CHANNEL: stderr
+    LOG_STDERR_FORMATTER: Bref\Monolog\CloudWatchFormatter
+    LOG_LEVEL: ${env:LOG_LEVEL, 'error'}
+    # JWT 設定
+    JWT_SECRET: ${env:JWT_SECRET}
+    JWT_TTL: ${env:JWT_TTL, '60'}
+    # メール設定 (Amazon SES)
+    MAIL_MAILER: ${env:MAIL_MAILER, 'ses'}
+    MAIL_HOST: ${env:MAIL_HOST, 'email-smtp.ap-northeast-1.amazonaws.com'}
+    MAIL_PORT: ${env:MAIL_PORT, '587'}
+    MAIL_USERNAME: ${env:MAIL_USERNAME}
+    MAIL_PASSWORD: ${env:MAIL_PASSWORD}
+    MAIL_FROM_ADDRESS: ${env:MAIL_FROM_ADDRESS}
+    MAIL_FROM_NAME: ${env:MAIL_FROM_NAME, '最後はいつ？'}
+    MAIL_LOG_CHANNEL: ${env:MAIL_LOG_CHANNEL, 'stderr'}
+    # 会員登録認証コード設定
+    VERIFICATION_CODE_TTL: ${env:VERIFICATION_CODE_TTL, '600'}
+    VERIFICATION_CODE_MAX_ATTEMPTS: ${env:VERIFICATION_CODE_MAX_ATTEMPTS, '5'}
+    VERIFICATION_CODE_RESEND_COOLDOWN: ${env:VERIFICATION_CODE_RESEND_COOLDOWN, '60'}
+  # IAM ロール設定（SES メール送信権限）
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource: "*"
+
+plugins:
+  - ./vendor/bref/bref
+
+package:
+  # デプロイに含めないファイル/ディレクトリ
+  patterns:
+    - "!node_modules/**"
+    - "!tests/**"
+    - "!storage/**"
+    - "!database/seeders/**"
+    - "!database/factories/**"
+    - "!.env"
+    - "!.env.*"
+    - "!phpunit.xml"
+    - "!phpstan.neon"
+    - "!pint.json"
+    - "!README*.md"
+    - "!docker-compose.yml"
+    - "!.git/**"
+    - "!.github/**"
+    - "!vendor/bin/**"
+    # IDE Helper（本番不要）
+    - "!_ide_helper.php"
+    - "!boost.json"
+
+functions:
+  # Web API (PHP-FPM)
+  api:
+    handler: public/index.php
+    runtime: php-84-fpm
+    memorySize: 512
+    timeout: 28
+    url: true
+    # Lambda 関数 URL を使用（API Gateway 不要でコスト削減）
+
+  # Artisan コマンド実行用
+  artisan:
+    handler: artisan
+    runtime: php-84-console
+    memorySize: 512
+    timeout: 720
+    # 定期実行タスクがあれば以下のように設定
+    # events:
+    #   - schedule:
+    #       rate: rate(1 hour)
+    #       input: '"schedule:run"'
