@@ -7,6 +7,7 @@ namespace Tests\Feature\Http\Controllers\Auth;
 use App\Models\User;
 use App\Models\UserSetting;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Str as SupportStr;
 use Laravel\Socialite\Facades\Socialite;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
@@ -25,11 +26,6 @@ class SocialAuthControllerTest extends TestCase
 
     /**
      * Socialiteユーザーのモックを作成するヘルパー
-     *
-     * @param  string  $id
-     * @param  string|null  $nickname
-     * @param  string|null  $name
-     * @param  string|null  $email
      */
     private function mockSocialiteUser(string $id, ?string $nickname = 'test_user', ?string $name = 'Test User', ?string $email = 'test@example.com'): void
     {
@@ -44,6 +40,7 @@ class SocialAuthControllerTest extends TestCase
 
         Socialite::shouldReceive('driver')->with('twitter')->andReturn($driver);
     }
+
     /**
      * Twitter認証リダイレクトが正常に動作すること
      */
@@ -136,7 +133,7 @@ class SocialAuthControllerTest extends TestCase
         $existingUser = User::factory()->create([
             'twitter_id' => 'twitter_67890',
             'email' => 'existing@example.com',
-            'password_hash' => null,
+            'password_hash' => SupportStr::random(32),
         ]);
 
         $this->mockSocialiteUser('twitter_67890', 'existing_user', 'Existing User', 'existing@example.com');
