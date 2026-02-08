@@ -3,6 +3,9 @@
     <!-- サイドメニュー -->
     <SideMenu v-model="showSideMenu" :nickname="userNickname" />
 
+    <!-- チュートリアルオーバーレイ -->
+    <TutorialOverlay />
+
     <!-- イベント作成モーダル（Teleportで body に配置） -->
     <Teleport to="body">
       <CreateEventModal v-if="showCreateModal" v-model="showCreateModal" @created="handleEventCreated" />
@@ -152,12 +155,15 @@ import { differenceInDays, differenceInHours, intervalToDuration } from 'date-fn
 import { getCategoryIcon } from '~/constants/categories';
 import CreateEventModal from '~/components/EventForm/CreateEventModal.vue';
 import SideMenu from '~/components/SideMenu/index.vue';
+import TutorialOverlay from '~/components/TutorialOverlay.vue';
 import { useEventsStore } from '~/stores/events';
 import { useSettingsStore } from '~/stores/settings';
+import { useTutorial } from '~/composables/useTutorial';
 
 // Pinia Store
 const eventsStore = useEventsStore();
 const settingsStore = useSettingsStore();
+const tutorial = useTutorial();
 
 // リアルタイム更新用
 const currentTime = ref(Date.now());
@@ -341,5 +347,9 @@ settingsStore.loadLocalSettings();
 await Promise.all([
   fetchUserInfo(),
   eventsStore.fetchEvents(),
+  settingsStore.loadServerSettings(),
 ]);
+
+// サーバー設定読み込み後にチュートリアル自動表示をチェック
+tutorial.checkAutoShow();
 </script>
