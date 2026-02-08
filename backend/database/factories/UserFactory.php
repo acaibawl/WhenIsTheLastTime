@@ -26,6 +26,7 @@ class UserFactory extends Factory
     {
         return [
             'email' => fake()->unique()->safeEmail(),
+            'twitter_id' => null,
             'password_hash' => static::$password ??= Hash::make('password'),
             'nickname' => fake()->userName(),
         ];

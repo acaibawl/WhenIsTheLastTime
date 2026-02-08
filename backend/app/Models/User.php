@@ -15,7 +15,8 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 /**
  * @property int $id
  * @property string $email
- * @property string $password_hash
+ * @property string|null $twitter_id
+ * @property string|null $password_hash
  * @property string $nickname
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -48,6 +49,7 @@ class User extends Authenticatable implements JWTSubject
      */
     protected $fillable = [
         'email',
+        'twitter_id',
         'password_hash',
         'nickname',
     ];
