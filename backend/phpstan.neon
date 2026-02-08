@@ -11,5 +11,8 @@ parameters:
         identifier: missingType.iterableValue
         path: tests
     -
+        identifier: method.notFound
+        path: tests
+    -
         '#uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types: TFactory#'
   reportMaybes: false

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\HealthController;
@@ -36,6 +37,17 @@ Route::middleware('api')->group(function () {
                 Route::post('/resend-code', [AuthController::class, 'resendVerificationCode'])->name('register.resend-code');
             });
             Route::post('/login', [AuthController::class, 'login'])->name('login');
+
+            // ソーシャル認証（Twitter/X）- OAuth 1.0a はセッションが必要
+            Route::middleware([
+                \Illuminate\Cookie\Middleware\EncryptCookies::class,
+                \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+                \Illuminate\Session\Middleware\StartSession::class,
+            ])->prefix('/social')->name('social.')->group(function () {
+                Route::get('/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('redirect');
+                Route::get('/{provider}/callback', [SocialAuthController::class, 'callback'])->name('callback');
+            });
+
             Route::middleware('auth:api')->group(function () {
                 Route::get('/me', [AuthController::class, 'me'])->name('me');
                 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
